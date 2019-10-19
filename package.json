@@ -1,0 +1,72 @@
+{
+  "name": "@code-engine/workers",
+  "version": "1.0.0-alpha.0",
+  "description": "CodeEngine's multi-threaded processing functionality",
+  "keywords": [
+    "code-engine",
+    "workers",
+    "worker-threads",
+    "parallel"
+  ],
+  "author": {
+    "name": "James Messinger",
+    "url": "https://jamesmessinger.com"
+  },
+  "license": "MIT",
+  "homepage": "https://engine.codes",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CodeEngineOrg/code-engine-workers.git"
+  },
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib"
+  ],
+  "scripts": {
+    "clean": "shx rm -rf .nyc_output coverage lib",
+    "lint": "npm run lint:typescript && npm run lint:javascript",
+    "lint:typescript": "tslint -p tsconfig.json",
+    "lint:javascript": "eslint test",
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "test": "mocha && npm run lint",
+    "coverage": "nyc mocha",
+    "upgrade": "npm-check -u",
+    "bump": "bump --tag --push --all",
+    "release": "npm run upgrade && npm run clean && npm run build && npm test && npm run bump"
+  },
+  "engines": {
+    "node": ">=12.5"
+  },
+  "engineStrict": true,
+  "devDependencies": {
+    "@types/chai": "^4.2.2",
+    "@types/mocha": "^5.2.7",
+    "@types/node": "^12.7.5",
+    "@types/sinon": "^7.5.0",
+    "chai": "^4.2.0",
+    "coveralls": "^3.0.4",
+    "eslint": "^6.3.0",
+    "eslint-config-modular": "^7.0.0",
+    "mocha": "^6.1.4",
+    "npm-check": "^5.9.0",
+    "nyc": "^14.1.1",
+    "shx": "^0.3.2",
+    "sinon": "^7.5.0",
+    "source-map-support": "^0.5.12",
+    "tmp": "^0.1.0",
+    "tslint": "^5.20.0",
+    "tslint-modular": "^1.4.1",
+    "typescript": "^3.6.3",
+    "typescript-tslint-plugin": "^0.5.0",
+    "version-bump-prompt": "^5.0.3"
+  },
+  "dependencies": {
+    "@code-engine/types": "^1.0.0-alpha.1",
+    "@code-engine/utils": "^1.0.0-alpha.1",
+    "ono": "^5.1.0",
+    "resolve-from": "^5.0.0",
+    "resolve-global": "^1.0.0"
+  }
+}
