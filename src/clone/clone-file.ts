@@ -1,4 +1,4 @@
-import { File, FileInfo } from "@code-engine/types";
+import { File } from "@code-engine/types";
 import { clone } from "./clone";
 import { CloneableObject } from "./clone-helpers";
 
@@ -20,10 +20,10 @@ export interface FileClone {
  * Returns a cloneable copy of the given file.
  * @internal
  */
-export function cloneFile(file: File | FileInfo): FileClone {
+export function cloneFile(file: File): FileClone {
   return {
     path: file.path,
-    source: String(file.source),
+    source: String(file.source || ""),
     createdAt: file.createdAt,
     modifiedAt: file.modifiedAt,
     metadata: clone(file.metadata) as CloneableObject,

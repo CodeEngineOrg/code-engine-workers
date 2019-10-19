@@ -73,10 +73,12 @@ export class Executor extends Messenger {
     let output = await fileProcessor(file, context);
 
     for await (let fileInfo of iterate(output)) {
+      let outFile = createFile(fileInfo);
+
       this.postReply({
         to: message.id,
         type: "file",
-        file: cloneFile(fileInfo),
+        file: cloneFile(outFile),
       });
     }
 
