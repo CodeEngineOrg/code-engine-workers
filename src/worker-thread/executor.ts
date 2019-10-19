@@ -70,7 +70,7 @@ export class Executor extends Messenger {
 
     // Process the file using the specified plugin
     let fileProcessor = this._processors.get(message.moduleUID)!;
-    let output = await fileProcessor(file, context);
+    let output = await fileProcessor.call(undefined, file, context);
 
     for await (let fileInfo of iterate(output)) {
       let outFile = createFile(fileInfo);
