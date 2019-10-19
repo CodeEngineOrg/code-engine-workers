@@ -1,6 +1,6 @@
 {
   "name": "@code-engine/workers",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.2",
   "description": "CodeEngine's multi-threaded processing functionality",
   "keywords": [
     "code-engine",
@@ -33,7 +33,7 @@
     "test": "mocha && npm run lint",
     "coverage": "nyc mocha",
     "upgrade": "npm-check -u",
-    "bump": "bump --tag --push --all",
+    "bump": "bump prerelease --tag --push --all",
     "release": "npm run upgrade && npm run clean && npm run build && npm test && npm run bump"
   },
   "engines": {
