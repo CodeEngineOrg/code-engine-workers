@@ -130,8 +130,8 @@ describe("WorkerPool class", () => {
         WorkerPool.create("a bunch");
       }
 
-      expect(infinite).to.throw(RangeError);
-      expect(infinite).to.throw("Concurrency must be a positive integer, not a bunch.");
+      expect(infinite).to.throw(TypeError);
+      expect(infinite).to.throw("Concurrency must be a positive integer, not string.");
     });
   });
 
