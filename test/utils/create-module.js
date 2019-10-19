@@ -20,7 +20,7 @@ async function createModule (code, data) {
   let moduleId = await new Promise((resolve, reject) =>
     tmp.file({ prefix: "code-engine-", postfix: ".js" }, (e, p) => e ? reject(e) : resolve(p)));
 
-  await fs.writeFile(moduleId, `module.exports = ${code};`);
+  await fs.writeFile(moduleId, `"use strict";\nmodule.exports = ${code};`);
 
   if (data === undefined) {
     return moduleId;
