@@ -1,4 +1,4 @@
-import { CloneableObject, File } from "@code-engine/types";
+import { CloneableObject, File, SourceMap } from "@code-engine/types";
 
 /**
  * The data necessary to clone a `File` object across the thread boundary.
@@ -7,6 +7,7 @@ import { CloneableObject, File } from "@code-engine/types";
 export interface FileClone {
   path: string;
   source?: string;
+  sourceMap?: SourceMap;
   createdAt?: Date;
   modifiedAt?: Date;
   metadata?: CloneableObject;
@@ -22,6 +23,7 @@ export function cloneFile(file: File): FileClone {
   return {
     path: file.path,
     source: String(file.source || ""),
+    sourceMap: file.sourceMap,
     createdAt: file.createdAt,
     modifiedAt: file.modifiedAt,
     metadata: file.metadata,
