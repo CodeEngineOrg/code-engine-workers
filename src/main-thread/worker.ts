@@ -2,7 +2,6 @@ import { Context, File, FileInfo, ModuleDefinition } from "@code-engine/types";
 import { log } from "@code-engine/utils";
 import { ono } from "ono";
 import * as path from "path";
-import { clone } from "../clone/clone";
 import { cloneContext } from "../clone/clone-context";
 import { cloneFile } from "../clone/clone-file";
 import { LoadModuleReply } from "../messaging/replies";
@@ -43,7 +42,7 @@ export class Worker extends Messenger {
       cwd: this._context.cwd,
       moduleUID,
       moduleId: module.moduleId,
-      data: clone(module.data),
+      data: module.data,
     });
 
     // Return the name of the module's export

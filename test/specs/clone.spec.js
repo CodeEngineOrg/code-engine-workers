@@ -182,31 +182,14 @@ describe("Cloning data across the thread boundary", () => {
     let [cloned, mutated] = await testClone(originalData, mutate);
 
     // The objects were cloned as POJOs, not class instances
-    expect(cloned.foo).not.to.be.an.instanceof(Foo);
-    expect(cloned.url).not.to.be.an.instanceof(URL);
+    expect(cloned.foo).to.be.an("object").and.not.an.instanceof(Foo);
+    expect(cloned.url).to.be.an("object").and.not.an.instanceof(URL);
 
     expect(cloned).to.deep.equal({
       foo: {
         instanceProperty: 1,
-        getter: 3,
-        protoProperty: 3,
-        protoField: 4,
-        protoGetter: 6,
       },
-      url: {
-        protocol: "http:",
-        username: "",
-        password: "",
-        hostname: "example.com",
-        host: "example.com",
-        port: "",
-        origin: "http://example.com",
-        pathname: "/foo/bar",
-        search: "?baz=true",
-        searchParams: {},
-        hash: "#hash",
-        href: "http://example.com/foo/bar?baz=true#hash",
-      }
+      url: {}
     });
 
     // Mutate properties of the data object. Note that we're able to modify read-only properties
@@ -232,20 +215,7 @@ describe("Cloning data across the thread boundary", () => {
         protoField: 400,
         protoGetter: 500,
       },
-      url: {
-        protocol: "ftp:",
-        username: "admin",
-        password: "letmein",
-        hostname: "abc.org",
-        host: "abc.org:2121",
-        port: "2121",
-        origin: "ftp://abc.org:2121",
-        pathname: "/subdir/file.txt",
-        search: "",
-        searchParams: {},
-        hash: "",
-        href: "ftp://admin:letmein@abc.org:2121/subdir/file.txt",
-      }
+      url: {}
     });
   });
 
@@ -270,9 +240,9 @@ describe("Cloning data across the thread boundary", () => {
     let [cloned, mutated] = await testClone(originalData, mutate);
 
     expect(cloned).to.deep.equal({
-      array: [{ instanceProperty: 1, getter: 2 }, { instanceProperty: 2, getter: 3 }],
-      set: new Set([{ instanceProperty: 3, getter: 4 }, { instanceProperty: 4, getter: 5 }]),
-      map: new Map([["five", { instanceProperty: 5, getter: 6 }], ["six", { instanceProperty: 6, getter: 7 }]]),
+      array: [{ instanceProperty: 1 }, { instanceProperty: 2 }],
+      set: new Set([{ instanceProperty: 3 }, { instanceProperty: 4 }]),
+      map: new Map([["five", { instanceProperty: 5 }], ["six", { instanceProperty: 6 }]]),
     });
 
     function mutate (data) {
@@ -284,70 +254,65 @@ describe("Cloning data across the thread boundary", () => {
     }
 
     expect(mutated).to.deep.equal({
-      array: [{ instanceProperty: 2, getter: 2 }, { instanceProperty: 3, getter: 3 }],
-      set: new Set([{ instanceProperty: 4, getter: 4 }, { instanceProperty: 5, getter: 5 }]),
-      map: new Map([["five", { instanceProperty: 6, getter: 6 }], ["six", { instanceProperty: 7, getter: 7 }]]),
+      array: [{ instanceProperty: 2 }, { instanceProperty: 3 }],
+      set: new Set([{ instanceProperty: 4 }, { instanceProperty: 5 }]),
+      map: new Map([["five", { instanceProperty: 6 }], ["six", { instanceProperty: 7 }]]),
     });
   });
 
 
-  it("should clone errors as POJOs", async () => {
+  it("should clone errors", async () => {
     let originalData = {
       err: new Error("Boom!"),
       typeError: new TypeError("Bad Type!"),
       errWithProps: (() => {
-        let e = new Error("Boom");
+        let e = new RangeError("Boom");
         e.foo = 42;
         e.bar = /regex/;
         e.baz = new URL("http://example.com/foo/bar?baz=true#hash");
         return e;
       })(),
       onoError: ono.syntax({ foo: false, bar: [1, 2, 3]}, "Bad Syntax!"),
+      pojoError: ono.syntax({ foo: false, bar: [1, 2, 3]}, "Bad Syntax!").toJSON(),
     };
 
     let [cloned] = await testClone(originalData);
 
-    // Errors cannot be cloned, so they are cloned as POJOs.
-    expect(cloned.err).not.to.be.an.instanceof(Error);
-    expect(cloned.typeError).not.to.be.an.instanceof(Error);
-    expect(cloned.errWithProps).not.to.be.an.instanceof(Error);
-    expect(cloned.onoError).not.to.be.an.instanceof(Error);
+    expect(cloned.err).to.be.an.instanceof(Error);
+    expect(cloned.err).to.have.property("name", "Error");
+    expect(cloned.err).to.have.property("message", "Boom!");
+    expect(cloned.err).to.have.property("stack", originalData.err.stack);
 
-    expect(cloned.err).to.deep.equal({
-      name: "Error",
-      message: "Boom!",
-      stack: originalData.err.stack,
-    });
-    expect(cloned.typeError).to.deep.equal({
-      name: "TypeError",
-      message: "Bad Type!",
-      stack: originalData.typeError.stack,
-    });
-    expect(cloned.errWithProps).to.deep.equal({
-      name: "Error",
-      message: "Boom",
-      stack: originalData.errWithProps.stack,
-      foo: 42,
-      bar: /regex/,
-      baz: {
-        protocol: "http:",
-        username: "",
-        password: "",
-        hostname: "example.com",
-        host: "example.com",
-        port: "",
-        origin: "http://example.com",
-        pathname: "/foo/bar",
-        search: "?baz=true",
-        searchParams: {},
-        hash: "#hash",
-        href: "http://example.com/foo/bar?baz=true#hash",
-      }
-    });
-    expect(cloned.onoError).to.deep.equal({
+    expect(cloned.typeError).to.be.an.instanceof(TypeError);
+    expect(cloned.typeError).to.have.property("name", "TypeError");
+    expect(cloned.typeError).to.have.property("message", "Bad Type!");
+    expect(cloned.typeError).to.have.property("stack", originalData.typeError.stack);
+
+    expect(cloned.errWithProps).to.be.an.instanceof(RangeError);
+    expect(cloned.errWithProps).to.have.property("name", "RangeError");
+    expect(cloned.errWithProps).to.have.property("message", "Boom");
+    expect(cloned.errWithProps).to.have.property("stack", originalData.errWithProps.stack);
+
+    // The custom properties are not cloned by the Structured Clone Algorithm
+    expect(cloned.errWithProps).not.to.have.property("foo");
+    expect(cloned.errWithProps).not.to.have.property("bar");
+    expect(cloned.errWithProps).not.to.have.property("baz");
+
+    expect(cloned.onoError).to.be.an.instanceof(SyntaxError);
+    expect(cloned.onoError).to.have.property("name", "SyntaxError");
+    expect(cloned.onoError).to.have.property("message", "Bad Syntax!");
+    expect(cloned.onoError).to.have.property("stack", originalData.onoError.stack);
+
+    // The custom properties are not cloned by the Structured Clone Algorithm
+    expect(cloned.onoError).not.to.have.property("foo");
+    expect(cloned.onoError).not.to.have.property("bar");
+
+    // This is a POJO, not an Error object, so its custom properties ARE cloned
+    expect(cloned.pojoError).to.be.an("object").and.not.an.instanceof(SyntaxError);
+    expect(cloned.pojoError).to.deep.equal({
       name: "SyntaxError",
       message: "Bad Syntax!",
-      stack: originalData.onoError.stack,
+      stack: originalData.pojoError.stack,
       foo: false,
       bar: [1, 2, 3],
     });

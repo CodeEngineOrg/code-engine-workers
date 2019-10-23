@@ -51,7 +51,7 @@ export abstract class Messenger {
     }
     catch (error) {
       // Something went wrong while handling the message, so reply with an error.
-      this.postReply({ to: message.id, type: "error", error: cloneError(error as Error)});
+      this.postReply({ to: message.id, type: "error", error: cloneError(error)});
     }
   }
 }

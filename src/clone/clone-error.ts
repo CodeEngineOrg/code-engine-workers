@@ -1,6 +1,5 @@
 import { Cloneable } from "@code-engine/types";
-import { ErrorLike, ono } from "ono";
-import { clone } from "./clone";
+import { ErrorLike, ono, Ono } from "ono";
 
 /**
  * The data necessary to clone an `Error` object across the thread boundary.
@@ -18,8 +17,13 @@ export interface ErrorClone {
  * Returns a cloneable copy of the given error.
  * @internal
  */
-export function cloneError(error: ErrorLike): ErrorClone {
-  return clone(error) as ErrorClone;
+export function cloneError(error: unknown): ErrorClone {
+  if (typeof error === "object") {
+    return Ono.toJSON(error as ErrorLike) as ErrorClone;
+  }
+  else {
+    return error as ErrorClone;
+  }
 }
 
 

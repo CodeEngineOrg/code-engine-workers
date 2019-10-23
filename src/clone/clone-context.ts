@@ -1,7 +1,6 @@
 import { CloneableObject, Context, LogLevel } from "@code-engine/types";
 import { LogReply, Reply } from "../messaging/replies";
 import { Messenger } from "../worker-thread/messenger";
-import { clone } from "./clone";
 import { cloneError } from "./clone-error";
 
 /**
@@ -35,26 +34,25 @@ export function createContext(messenger: Messenger, messageId: number, context: 
   return {
     ...context,
     logger: {
-      log(message, data) {
+      log(message: string, data: CloneableObject) {
         messenger.postReply(createLogReply("info", messageId, message, data));
       },
-      debug(message, data) {
+      debug(message: string, data: CloneableObject) {
         if (context.debug) {
           messenger.postReply(createLogReply("debug", messageId, message, data));
         }
       },
-      warn(message, data) {
-        messenger.postReply(createLogReply("warning", messageId, message, data));
+      warn(warning: string | Error, data: CloneableObject) {
+        messenger.postReply(createLogReply("warning", messageId, warning, data));
       },
-      error(message, data) {
-        messenger.postReply(createLogReply("error", messageId, message, data));
+      error(error: string | Error, data: CloneableObject) {
+        messenger.postReply(createLogReply("error", messageId, error, data));
       }
     }
   };
 }
 
-function createLogReply(level: LogLevel, to: number, msg: string | Error, obj?: object): Reply & LogReply {
-  let message = typeof msg === "string" ? msg : cloneError(msg);
-  let data = obj && clone(obj) as CloneableObject;
+function createLogReply(level: LogLevel, to: number, msg: string | Error, data?: CloneableObject): Reply & LogReply {
+  let message = cloneError(msg);
   return { type: "log", to, level, message, data };
 }
