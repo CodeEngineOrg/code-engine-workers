@@ -1,7 +1,6 @@
-import { ModuleDefinition } from "@code-engine/types";
+import { Cloneable, ModuleDefinition } from "@code-engine/types";
 import { ContextClone } from "../clone/clone-context";
 import { FileClone } from "../clone/clone-file";
-import { Cloneable } from "../clone/clone-helpers";
 
 
 /**

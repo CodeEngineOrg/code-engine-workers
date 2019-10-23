@@ -1,6 +1,6 @@
+import { Cloneable } from "@code-engine/types";
 import { ErrorLike, ono } from "ono";
 import { clone } from "./clone";
-import { Cloneable } from "./clone-helpers";
 
 /**
  * The data necessary to clone an `Error` object across the thread boundary.

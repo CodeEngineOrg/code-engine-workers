@@ -1,6 +1,5 @@
-import { File } from "@code-engine/types";
+import { CloneableObject, File } from "@code-engine/types";
 import { clone } from "./clone";
-import { CloneableObject } from "./clone-helpers";
 
 /**
  * The data necessary to clone a `File` object across the thread boundary.

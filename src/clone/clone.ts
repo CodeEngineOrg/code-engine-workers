@@ -1,5 +1,6 @@
+import { Cloneable, CloneableObject } from "@code-engine/types";
 import { Ono } from "ono";
-import { Cloneable, CloneableObject, getPropertyNames, isCloneable } from "./clone-helpers";
+import { getPropertyNames, isCloneable } from "./clone-helpers";
 
 const defaultDepth = 5;
 
@@ -19,6 +20,7 @@ export function clone(value: unknown, depth = defaultDepth): Cloneable {
   }
 
   if (Array.isArray(value)) {
+    // tslint:disable-next-line: no-null-undefined-union
     return value.map((item) => clone(item, depth));
   }
 

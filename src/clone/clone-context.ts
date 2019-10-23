@@ -1,9 +1,8 @@
-import { Context, LogLevel } from "@code-engine/types";
+import { CloneableObject, Context, LogLevel } from "@code-engine/types";
 import { LogReply, Reply } from "../messaging/replies";
 import { Messenger } from "../worker-thread/messenger";
 import { clone } from "./clone";
 import { cloneError } from "./clone-error";
-import { CloneableObject } from "./clone-helpers";
 
 /**
  * The data necessary to clone a `Context` object across the thread boundary.

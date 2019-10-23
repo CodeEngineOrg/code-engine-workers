@@ -1,3 +1,5 @@
+import { Cloneable, CloneableObject } from "@code-engine/types";
+
 const objectPrototype = Object.getPrototypeOf({});
 
 const primitives = ["string", "number", "boolean", "bigint"];
@@ -6,40 +8,6 @@ const cloneable = [
   Boolean, String, Date, RegExp, ArrayBuffer, DataView, Int8Array, Int16Array, Int32Array,
   Uint8Array, Uint8ClampedArray, Uint16Array, Uint32Array, Float32Array, Float64Array
 ];
-
-
-/**
- * All Cloneable types
- * @internal
- */
-export type Cloneable =
-  undefined | string | number | boolean | bigint | Date | RegExp | CloneableObject | CloneableArray |
-  CloneableSet | CloneableMap | ArrayBuffer | DataView | Int8Array | Int16Array | Int32Array |
-  Uint8Array | Uint8ClampedArray | Uint16Array | Uint32Array | Float32Array | Float64Array;
-
-/**
- * A Cloneable Array
- * @internal
- */
-export interface CloneableArray extends Array<Cloneable> {}
-
-/**
- * A Cloneable Set
- * @internal
- */
-export interface CloneableSet extends Set<Cloneable> {}
-
-/**
- * A Cloneable Map
- * @internal
- */
-export interface CloneableMap extends Map<Cloneable, Cloneable> {}
-
-/**
- * A Cloneable Object
- * @internal
- */
-export interface CloneableObject { [key: string]: Cloneable; }
 
 
 /**
