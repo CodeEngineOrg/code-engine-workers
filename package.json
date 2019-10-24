@@ -41,10 +41,10 @@
   },
   "engineStrict": true,
   "devDependencies": {
-    "@code-engine/types": "^1.0.0-beta.2",
+    "@code-engine/types": "^1.0.0-beta.4",
     "@types/chai": "^4.2.4",
     "@types/mocha": "^5.2.7",
-    "@types/node": "^12.11.5",
+    "@types/node": "^12.11.6",
     "@types/sinon": "^7.5.0",
     "chai": "^4.2.0",
     "coveralls": "^3.0.7",
