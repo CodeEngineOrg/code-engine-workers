@@ -88,6 +88,89 @@ describe("Executor.processFile()", () => {
     expect(file1.text).to.equal("[object Undefined]");
   });
 
+  it("should not copy shared ArrayBuffer data rather than transferring it", async () => {
+    // Allocate 50 bytes of shared memory, and fill it with "X"
+    let sharedMemory = new ArrayBuffer(50);
+    Buffer.from(sharedMemory).write("X".repeat(50));
+
+    // Use 10 bytes of the shared memory for the file contents
+    let mainThreadFile = createFile({
+      path: "file.txt",
+      contents: Buffer.from(sharedMemory, 20, 12),
+    });
+    mainThreadFile.contents.write("Hello, world");
+
+    // The worker thread modifies the file contents in-place
+    let moduleId = await createModule(function (workerThreadFile) {
+      workerThreadFile.contents.write("ABC", 5);
+      return workerThreadFile;
+    });
+
+    let processFile = await pool.loadFileProcessor(moduleId);
+    let generator = processFile(mainThreadFile, context);
+
+    let output = await generator.next();
+    let outputFile = createFile(output.value);
+
+    // The output file should have the modified contents
+    expect(outputFile.text).to.equal("HelloABCorld");
+
+    // But the original file's contents should remain unchanged
+    expect(mainThreadFile.text).to.equal("Hello, world");
+
+    // And the shared memory should remain unchanged
+    expect(Buffer.from(sharedMemory).toString()).to.equal(
+      "XXXXXXXXXXXXXXXXXXXXHello, worldXXXXXXXXXXXXXXXXXX"
+    );
+  });
+
+  it("should transfer ArrayBuffer data rather than copying it", async () => {
+    // Allocate 50 bytes of memory, and fill it with "X"
+    let memory = new ArrayBuffer(50);
+    Buffer.from(memory).write("X".repeat(50));
+
+    // Use the entire memory buffer for the file contents
+    let mainThreadFile = createFile({
+      path: "file.txt",
+      contents: Buffer.from(memory),
+    });
+    mainThreadFile.contents.write("Hello, world", 20);
+
+    // The worker thread modifies the file contents in-place
+    let moduleId = await createModule(function (workerThreadFile) {
+      workerThreadFile.contents.write("ABC", 5);
+      return workerThreadFile;
+    });
+
+    let processFile = await pool.loadFileProcessor(moduleId);
+    let generator = processFile(mainThreadFile, context);
+
+    let output = await generator.next();
+    let outputFile = createFile(output.value);
+
+    // The output file should have the modified contents
+    expect(outputFile.text).to.equal("XXXXXABCXXXXXXXXXXXXHello, worldXXXXXXXXXXXXXXXXXX");
+
+    // The original file's contents should be empty now,
+    // since the memory was transferred to the worker thread
+    expect(mainThreadFile.text).to.equal("");
+    expect(mainThreadFile.contents.byteLength).to.equal(0);
+
+    // The original file's memory buffer is now empty
+    expect(mainThreadFile.contents.buffer).to.equal(memory);
+    expect(memory.byteLength).to.equal(0);
+
+    try {
+      // The memory buffer can no longer be used
+      Buffer.from(memory);
+      assert.fail("An error should have been thrown");
+    }
+    catch (error) {
+      expect(error).to.be.an.instanceOf(TypeError);
+      expect(error.message).to.equal("Cannot perform Construct on a neutered ArrayBuffer");
+    }
+  });
+
   it("should throw an error if the FileProcessor returns an invalid value", async () => {
     let moduleId = await createModule(() => false);
     let processFile = await pool.loadFileProcessor(moduleId);

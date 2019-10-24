@@ -56,12 +56,13 @@ export class Worker extends Messenger {
     await this._waitUntilOnline;
     this._debug(`CodeEngine worker #${this.threadId} is processing ${file}`, { path: file.path });
 
-    let replies = this.postMessageWithReplies({
-      type: "processFile",
-      moduleUID,
-      file: cloneFile(file),
-      context: cloneContext(context),
-    });
+    let [fileClone, transferList] = cloneFile(file);
+    let contextClone = cloneContext(context);
+
+    let replies = this.postMessageWithReplies(
+      { type: "processFile", moduleUID, file: fileClone, context: contextClone },
+      transferList
+    );
 
     for await (let reply of replies) {
       // tslint:disable-next-line: switch-default

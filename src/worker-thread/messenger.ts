@@ -29,8 +29,8 @@ export abstract class Messenger {
   /**
    * Replies to a message from the `Worker`.
    */
-  public postReply(reply: Reply): void {
-    this._port.postMessage(reply);
+  public postReply(reply: Reply, transferList?: ArrayBuffer[]): void {
+    this._port.postMessage(reply, transferList);
   }
 
   /**

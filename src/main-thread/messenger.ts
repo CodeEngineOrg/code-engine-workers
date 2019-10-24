@@ -23,9 +23,9 @@ export class Messenger extends Worker {
   /**
    * Sends a message to the `Executor`.
    */
-  public postMessage(message: Message): number {
+  public postMessage(message: Message, transferList?: ArrayBuffer[]): number {
     let id = ++messageCounter;
-    super.postMessage({ ...message, id });
+    super.postMessage({ ...message, id }, transferList);
     return id;
   }
 
@@ -33,8 +33,8 @@ export class Messenger extends Worker {
    * Sends a message and returns a promise that resolves when the `Executor` replies to the message.
    * If an error occurs while processing the message, then the promise will reject.
    */
-  public async postMessageAsync(message: Message): Promise<Reply> {
-    let id = this.postMessage(message);
+  public async postMessageAsync(message: Message, transferList?: ArrayBuffer[]): Promise<Reply> {
+    let id = this.postMessage(message, transferList);
     return this._awaitReply(id);
   }
 
@@ -42,9 +42,10 @@ export class Messenger extends Worker {
    * Sends a message to the `Executor` and yields all replies. If an error occurs while processing
    * the message then the generator will reject.
    */
-  public async* postMessageWithReplies(message: Message): AsyncGenerator<Reply, FinishedReply> {
+  public async* postMessageWithReplies(message: Message, transferList?: ArrayBuffer[])
+  : AsyncGenerator<Reply, FinishedReply> {
     // Send the message and await the first reply
-    let reply = await this.postMessageAsync(message);
+    let reply = await this.postMessageAsync(message, transferList);
 
     while (reply.type !== "finished") {
       // Immediately start waiting for the next reply,

@@ -74,12 +74,8 @@ export class Executor extends Messenger {
 
     for await (let fileInfo of iterate(output)) {
       let outFile = createFile(fileInfo);
-
-      this.postReply({
-        to: message.id,
-        type: "file",
-        file: cloneFile(outFile),
-      });
+      let [outFileClone, transferList] = cloneFile(outFile);
+      this.postReply({ to: message.id, type: "file", file: outFileClone }, transferList);
     }
 
     // Let the worker know that we're done yielding files
