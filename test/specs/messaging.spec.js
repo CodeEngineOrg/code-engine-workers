@@ -26,7 +26,7 @@ describe("WorkerPool messaging between threads", () => {
     });
 
     let processFile = await pool.loadFileProcessor(moduleId);
-    await processFile(createFile("file.txt"), context).next();
+    await processFile(createFile({ path: "file.txt" }), context).next();
 
     // Each log method should have been called once
     sinon.assert.calledOnce(context.logger.log);
@@ -56,7 +56,7 @@ describe("WorkerPool messaging between threads", () => {
     });
 
     let processFile = await pool.loadFileProcessor(moduleId);
-    await processFile(createFile("file.txt"), context).next();
+    await processFile(createFile({ path: "file.txt" }), context).next();
 
     // Lots of debug messages get logged for various things.
     // But for the purposes of this test, we only care that the log message above was NOT logged.
@@ -101,7 +101,7 @@ describe("WorkerPool messaging between threads", () => {
     let processFile = await pool.loadFileProcessor(moduleId);
 
     try {
-      await processFile(createFile("file.txt"), context).next();
+      await processFile(createFile({ path: "file.txt" }), context).next();
       assert.fail("An error should have been thrown");
     }
     catch (error) {
@@ -133,7 +133,7 @@ describe("WorkerPool messaging between threads", () => {
     let processFile = await pool.loadFileProcessor(moduleId);
 
     try {
-      await processFile(createFile("file.txt"), context).next();
+      await processFile(createFile({ path: "file.txt" }), context).next();
       assert.fail("An error should have been thrown");
     }
     catch (error) {
@@ -159,7 +159,7 @@ describe("WorkerPool messaging between threads", () => {
     let processFile = await pool.loadFileProcessor(moduleId);
 
     try {
-      await processFile(createFile("file.txt"), context).next();
+      await processFile(createFile({ path: "file.txt" }), context).next();
       assert.fail("An error should have been thrown");
     }
     catch (error) {
@@ -175,7 +175,7 @@ describe("WorkerPool messaging between threads", () => {
     let processFile = await pool.loadFileProcessor(moduleId);
 
     try {
-      await processFile(createFile("file.txt"), context).next();
+      await processFile(createFile({ path: "file.txt" }), context).next();
       assert.fail("An error should have been thrown");
     }
     catch (error) {

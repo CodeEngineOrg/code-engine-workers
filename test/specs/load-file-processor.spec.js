@@ -35,7 +35,7 @@ describe("WorkerPool.loadFileProcessor()", () => {
     });
 
     let processFile = await pool.loadFileProcessor(moduleId);
-    let generator = processFile(createFile("file.txt"), context);
+    let generator = processFile(createFile({ path: "file.txt" }), context);
     let { value } = await generator.next();
     let file = createFile(value);
 
@@ -48,7 +48,7 @@ describe("WorkerPool.loadFileProcessor()", () => {
     }`);
 
     let processFile = await pool.loadFileProcessor(moduleId);
-    let generator = processFile(createFile("file.txt"), context);
+    let generator = processFile(createFile({ path: "file.txt" }), context);
     let { value } = await generator.next();
     let file = createFile(value);
 
@@ -62,7 +62,7 @@ describe("WorkerPool.loadFileProcessor()", () => {
     }, "CommonJS module with data");
 
     let processFile = await pool.loadFileProcessor(moduleId);
-    let generator = processFile(createFile("file.txt"), context);
+    let generator = processFile(createFile({ path: "file.txt" }), context);
     let { value } = await generator.next();
     let file = createFile(value);
 
@@ -75,7 +75,7 @@ describe("WorkerPool.loadFileProcessor()", () => {
     }`, "ECMAScript module with data");
 
     let processFile = await pool.loadFileProcessor(module);
-    let generator = processFile(createFile("file.txt"), context);
+    let generator = processFile(createFile({ path: "file.txt" }), context);
     let { value } = await generator.next();
     let file = createFile(value);
 
@@ -93,7 +93,7 @@ describe("WorkerPool.loadFileProcessor()", () => {
 
     let moduleId = await createModule(fileProcessor);
     let processFile = await pool.loadFileProcessor(moduleId);
-    let generator = processFile(createFile("file.txt"), context);
+    let generator = processFile(createFile({ path: "file.txt" }), context);
     let { value } = await generator.next();
     let file = createFile(value);
 
@@ -114,7 +114,7 @@ describe("WorkerPool.loadFileProcessor()", () => {
 
     let moduleId = await createModule(factory, 500);
     let processFile = await pool.loadFileProcessor(moduleId);
-    let generator = processFile(createFile("file.txt"), context);
+    let generator = processFile(createFile({ path: "file.txt" }), context);
     let { value } = await generator.next();
     let file = createFile(value);
 

@@ -54,7 +54,7 @@ describe("WorkerPool class", () => {
     let processFile = await pool.loadFileProcessor(moduleId);
 
     try {
-      await processFile(createFile("file.txt"), context).next();
+      await processFile(createFile({ path: "file.txt" }), context).next();
       assert.fail("An error should have been thrown");
     }
     catch (error) {

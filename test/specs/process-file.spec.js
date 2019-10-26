@@ -17,7 +17,7 @@ describe("Executor.processFile()", () => {
   it("should support FileProcessors that return nothing", async () => {
     let moduleId = await createModule(() => undefined);
     let processFile = await pool.loadFileProcessor(moduleId);
-    let generator = processFile(createFile("file.txt"), context);
+    let generator = processFile(createFile({ path: "file.txt" }), context);
     let { done, value } = await generator.next();
     expect(done).to.equal(true);
     expect(value).to.equal(undefined);
@@ -26,7 +26,7 @@ describe("Executor.processFile()", () => {
   it("should support FileProcessors that return a single file", async () => {
     let moduleId = await createModule(() => ({ path: "file1.txt" }));
     let processFile = await pool.loadFileProcessor(moduleId);
-    let generator = processFile(createFile("file.txt"), context);
+    let generator = processFile(createFile({ path: "file.txt" }), context);
     let file1 = await generator.next();
     expect(file1.value.path).to.equal("file1.txt");
   });
@@ -34,7 +34,7 @@ describe("Executor.processFile()", () => {
   it("should support FileProcessors that return an array of files", async () => {
     let moduleId = await createModule(() => [{ path: "file1.txt" }, { path: "file2.txt" }]);
     let processFile = await pool.loadFileProcessor(moduleId);
-    let generator = processFile(createFile("file.txt"), context);
+    let generator = processFile(createFile({ path: "file.txt" }), context);
 
     let file1 = await generator.next();
     expect(file1.value.path).to.equal("file1.txt");
@@ -49,7 +49,7 @@ describe("Executor.processFile()", () => {
       yield { path: "file2.txt" };
     });
     let processFile = await pool.loadFileProcessor(moduleId);
-    let generator = processFile(createFile("file.txt"), context);
+    let generator = processFile(createFile({ path: "file.txt" }), context);
 
     let file1 = await generator.next();
     expect(file1.value.path).to.equal("file1.txt");
@@ -65,7 +65,7 @@ describe("Executor.processFile()", () => {
       yield { path: "file2.txt" };
     });
     let processFile = await pool.loadFileProcessor(moduleId);
-    let generator = processFile(createFile("file.txt"), context);
+    let generator = processFile(createFile({ path: "file.txt" }), context);
 
     let file1 = await generator.next();
     expect(file1.value.path).to.equal("file1.txt");
@@ -82,7 +82,7 @@ describe("Executor.processFile()", () => {
       };
     });
     let processFile = await pool.loadFileProcessor(moduleId);
-    let generator = processFile(createFile("file.txt"), context);
+    let generator = processFile(createFile({ path: "file.txt" }), context);
     let { value } = await generator.next();
     let file1 = createFile(value);
     expect(file1.text).to.equal("[object Undefined]");
@@ -174,7 +174,7 @@ describe("Executor.processFile()", () => {
   it("should throw an error if the FileProcessor returns an invalid value", async () => {
     let moduleId = await createModule(() => false);
     let processFile = await pool.loadFileProcessor(moduleId);
-    let generator = processFile(createFile("file.txt"), context);
+    let generator = processFile(createFile({ path: "file.txt" }), context);
 
     try {
       await generator.next();
@@ -189,7 +189,7 @@ describe("Executor.processFile()", () => {
   it("should throw an error if the FileProcessor returns an invalid value asynchronously", async () => {
     let moduleId = await createModule(() => Promise.resolve(12345));
     let processFile = await pool.loadFileProcessor(moduleId);
-    let generator = processFile(createFile("file.txt"), context);
+    let generator = processFile(createFile({ path: "file.txt" }), context);
 
     try {
       await generator.next();
@@ -207,7 +207,7 @@ describe("Executor.processFile()", () => {
       yield { foo: "file2.txt" };
     });
     let processFile = await pool.loadFileProcessor(moduleId);
-    let generator = processFile(createFile("file.txt"), context);
+    let generator = processFile(createFile({ path: "file.txt" }), context);
 
     let file1 = await generator.next();
     expect(file1.value.path).to.equal("file1.txt");
