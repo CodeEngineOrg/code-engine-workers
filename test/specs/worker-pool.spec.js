@@ -95,7 +95,7 @@ describe("WorkerPool class", () => {
       }
 
       expect(zero).to.throw(RangeError);
-      expect(zero).to.throw("Concurrency must be a positive integer, not 0.");
+      expect(zero).to.throw("Invalid concurrency value: 0. Expected a positive integer.");
     });
 
     it("should throw an error if concurrency is negative", async () => {
@@ -104,7 +104,7 @@ describe("WorkerPool class", () => {
       }
 
       expect(negative).to.throw(RangeError);
-      expect(negative).to.throw("Concurrency must be a positive integer, not -1.");
+      expect(negative).to.throw("Invalid concurrency value: -1. Expected a positive integer.");
     });
 
     it("should throw an error if concurrency is infinite", async () => {
@@ -112,8 +112,8 @@ describe("WorkerPool class", () => {
         WorkerPool.create(Infinity);
       }
 
-      expect(infinite).to.throw(RangeError);
-      expect(infinite).to.throw("Concurrency must be a positive integer, not Infinity.");
+      expect(infinite).to.throw(TypeError);
+      expect(infinite).to.throw("Invalid concurrency value: Infinity. Expected an integer.");
     });
 
     it("should throw an error if concurrency is not a whole number", async () => {
@@ -121,8 +121,8 @@ describe("WorkerPool class", () => {
         WorkerPool.create(5.7);
       }
 
-      expect(infinite).to.throw(RangeError);
-      expect(infinite).to.throw("Concurrency must be a positive integer, not 5.7.");
+      expect(infinite).to.throw(TypeError);
+      expect(infinite).to.throw("Invalid concurrency value: 5.7. Expected an integer.");
     });
 
     it("should throw an error if concurrency is invalid", async () => {
@@ -131,7 +131,7 @@ describe("WorkerPool class", () => {
       }
 
       expect(infinite).to.throw(TypeError);
-      expect(infinite).to.throw("Concurrency must be a positive integer, not \"a bunch\".");
+      expect(infinite).to.throw("Invalid concurrency value: \"a bunch\". Expected a number.");
     });
   });
 

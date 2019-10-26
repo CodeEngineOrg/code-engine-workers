@@ -24,7 +24,7 @@ export class WorkerPool extends EventEmitter {
 
   public constructor(concurrency: number, context: Context) {
     super();
-    concurrency = validate.concurrency(concurrency, os.cpus().length);
+    concurrency = validate.positiveInteger("concurrency", concurrency, os.cpus().length);
 
     if (!context || typeof context.cwd !== "string") {
       throw ono(`A CodeEngine context object is required.`);
