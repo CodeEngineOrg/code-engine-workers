@@ -19,6 +19,7 @@ describe("Executor.processFile()", () => {
     let processFile = await pool.loadFileProcessor(moduleId);
     let generator = processFile(createFile({ path: "file.txt" }), context);
     let { done, value } = await generator.next();
+
     expect(done).to.equal(true);
     expect(value).to.equal(undefined);
   });
@@ -28,7 +29,8 @@ describe("Executor.processFile()", () => {
     let processFile = await pool.loadFileProcessor(moduleId);
     let generator = processFile(createFile({ path: "file.txt" }), context);
     let file1 = await generator.next();
-    expect(file1.value.path).to.equal("file1.txt");
+
+    expect(file1.value).to.deep.equal({ path: "file1.txt" });
   });
 
   it("should support FileProcessors that return an array of files", async () => {
@@ -37,10 +39,10 @@ describe("Executor.processFile()", () => {
     let generator = processFile(createFile({ path: "file.txt" }), context);
 
     let file1 = await generator.next();
-    expect(file1.value.path).to.equal("file1.txt");
+    expect(file1.value).to.deep.equal({ path: "file1.txt" });
 
     let file2 = await generator.next();
-    expect(file2.value.path).to.equal("file2.txt");
+    expect(file2.value).to.deep.equal({ path: "file2.txt" });
   });
 
   it("should support FileProcessors that generate files", async () => {
@@ -52,10 +54,10 @@ describe("Executor.processFile()", () => {
     let generator = processFile(createFile({ path: "file.txt" }), context);
 
     let file1 = await generator.next();
-    expect(file1.value.path).to.equal("file1.txt");
+    expect(file1.value).to.deep.equal({ path: "file1.txt" });
 
     let file2 = await generator.next();
-    expect(file2.value.path).to.equal("file2.txt");
+    expect(file2.value).to.deep.equal({ path: "file2.txt" });
   });
 
   it("should support FileProcessors that generate files asynchronously", async () => {
@@ -68,10 +70,10 @@ describe("Executor.processFile()", () => {
     let generator = processFile(createFile({ path: "file.txt" }), context);
 
     let file1 = await generator.next();
-    expect(file1.value.path).to.equal("file1.txt");
+    expect(file1.value).to.deep.equal({ path: "file1.txt" });
 
     let file2 = await generator.next();
-    expect(file2.value.path).to.equal("file2.txt");
+    expect(file2.value).to.deep.equal({ path: "file2.txt" });
   });
 
   it("should invoke the FileProcessor without a `this` context", async () => {
@@ -85,6 +87,7 @@ describe("Executor.processFile()", () => {
     let generator = processFile(createFile({ path: "file.txt" }), context);
     let { value } = await generator.next();
     let file1 = createFile(value);
+
     expect(file1.text).to.equal("[object Undefined]");
   });
 
@@ -210,7 +213,7 @@ describe("Executor.processFile()", () => {
     let generator = processFile(createFile({ path: "file.txt" }), context);
 
     let file1 = await generator.next();
-    expect(file1.value.path).to.equal("file1.txt");
+    expect(file1.value).to.deep.equal({ path: "file1.txt" });
 
     try {
       await generator.next();

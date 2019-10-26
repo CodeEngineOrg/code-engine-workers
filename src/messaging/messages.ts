@@ -1,4 +1,4 @@
-import { Cloneable, ModuleDefinition } from "@code-engine/types";
+import { ModuleDefinition } from "@code-engine/types";
 import { ContextClone } from "../clone/clone-context";
 import { FileClone } from "../clone/clone-file";
 
@@ -45,11 +45,6 @@ export interface LoadModuleMessage extends ModuleDefinition {
    * The directory to resolve relative module IDs.
    */
   cwd: string;
-
-  /**
-   * Data to pass to the module's `FileProcessorFactory` function.
-   */
-  data: Cloneable;
 }
 
 

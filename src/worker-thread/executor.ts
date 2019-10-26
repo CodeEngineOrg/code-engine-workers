@@ -1,5 +1,5 @@
 import { FileProcessor, FileProcessorFactory } from "@code-engine/types";
-import { createFile, iterate } from "@code-engine/utils";
+import { createFile, iterate, normalizeFileInfo } from "@code-engine/utils";
 import { ono } from "ono";
 import { MessagePort } from "worker_threads";
 import { createContext } from "../clone/clone-context";
@@ -73,7 +73,7 @@ export class Executor extends Messenger {
     let output = await fileProcessor.call(undefined, file, context);
 
     for await (let fileInfo of iterate(output)) {
-      let outFile = createFile(fileInfo);
+      let outFile = normalizeFileInfo(fileInfo);
       let [outFileClone, transferList] = cloneFile(outFile);
       this.postReply({ to: message.id, type: "file", file: outFileClone }, transferList);
     }
