@@ -9,6 +9,7 @@ import { cloneError } from "./clone-error";
  */
 export interface ContextClone {
   cwd: string;
+  concurrency: number;
   dev: boolean;
   debug: boolean;
 }
@@ -21,6 +22,7 @@ export interface ContextClone {
 export function cloneContext(context: Context): ContextClone {
   return {
     cwd: context.cwd,
+    concurrency: context.concurrency,
     dev: context.dev,
     debug: context.debug,
   };
@@ -35,18 +37,18 @@ export function createContext(messenger: Messenger, messageId: number, context: 
     ...context,
     logger: {
       log(message: string, data: CloneableObject) {
-        messenger.postReply(createLogReply("info", messageId, message, data));
+        messenger.postReply(createLogReply(LogLevel.Info, messageId, message, data));
       },
       debug(message: string, data: CloneableObject) {
         if (context.debug) {
-          messenger.postReply(createLogReply("debug", messageId, message, data));
+          messenger.postReply(createLogReply(LogLevel.Debug, messageId, message, data));
         }
       },
       warn(warning: string | Error, data: CloneableObject) {
-        messenger.postReply(createLogReply("warning", messageId, warning, data));
+        messenger.postReply(createLogReply(LogLevel.Warning, messageId, warning, data));
       },
       error(error: string | Error, data: CloneableObject) {
-        messenger.postReply(createLogReply("error", messageId, error, data));
+        messenger.postReply(createLogReply(LogLevel.Error, messageId, error, data));
       }
     }
   };
