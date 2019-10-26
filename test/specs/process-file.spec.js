@@ -182,7 +182,7 @@ describe("Executor.processFile()", () => {
     }
     catch (error) {
       expect(error).to.be.an.instanceOf(TypeError);
-      expect(error.message).to.equal("[boolean] is not a valid CodeEngine file. Expected an object with at least a \"path\" property.");
+      expect(error.message).to.equal("Invalid CodeEngine file: false. Expected an object with at least a \"path\" property.");
     }
   });
 
@@ -197,7 +197,7 @@ describe("Executor.processFile()", () => {
     }
     catch (error) {
       expect(error).to.be.an.instanceOf(TypeError);
-      expect(error.message).to.equal("[number] is not a valid CodeEngine file. Expected an object with at least a \"path\" property.");
+      expect(error.message).to.equal("Invalid CodeEngine file: 12345. Expected an object with at least a \"path\" property.");
     }
   });
 
@@ -218,7 +218,7 @@ describe("Executor.processFile()", () => {
     }
     catch (error) {
       expect(error).to.be.an.instanceOf(TypeError);
-      expect(error.message).to.equal("[Object] is not a valid CodeEngine file. Expected an object with at least a \"path\" property.");
+      expect(error.message).to.equal("Invalid CodeEngine file: {foo}. Expected an object with at least a \"path\" property.");
     }
   });
 
