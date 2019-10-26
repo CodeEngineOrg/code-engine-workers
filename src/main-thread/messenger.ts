@@ -1,3 +1,4 @@
+import { EventName } from "@code-engine/types";
 import { ono } from "ono";
 import { Worker, WorkerOptions } from "worker_threads";
 import { createError } from "../clone/clone-error";
@@ -109,7 +110,7 @@ export class Messenger extends Worker {
     catch (error) {
       // Something went wrong while handling the reply,
       // so emit the error so it can be handled appropriately
-      this.emit("error", error);
+      this.emit(EventName.Error, error);
     }
   }
 }

@@ -1,4 +1,4 @@
-import { Context, File, FileProcessor, ModuleDefinition } from "@code-engine/types";
+import { Context, EventName, File, FileProcessor, ModuleDefinition } from "@code-engine/types";
 import { validate } from "@code-engine/utils";
 import { EventEmitter } from "events";
 import { ono } from "ono";
@@ -92,7 +92,7 @@ export class WorkerPool extends EventEmitter {
    */
   private _createWorkers(concurrency: number, context: Context) {
     // Re-emit all errros from workers
-    let emitError = (error: Error) => this.emit("error", error);
+    let emitError = (error: Error) => this.emit(EventName.Error, error);
 
     for (let i = 0; i < concurrency; i++) {
       let worker = new Worker(context);

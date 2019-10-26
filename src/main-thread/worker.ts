@@ -1,4 +1,4 @@
-import { Context, File, FileInfo, ModuleDefinition } from "@code-engine/types";
+import { Context, EventName, File, FileInfo, ModuleDefinition } from "@code-engine/types";
 import { log } from "@code-engine/utils";
 import { ono } from "ono";
 import * as path from "path";
@@ -106,7 +106,7 @@ export class Worker extends Messenger {
   private _handleExit(exitCode: number) {
     if (!this._isTerminated) {
       // The worker crashed or exited unexpectedly
-      this.emit("error", ono({ workerId: this.threadId },
+      this.emit(EventName.Error, ono({ workerId: this.threadId },
         `CodeEngine worker #${this.threadId} unexpectedly exited with code ${exitCode}.`));
     }
   }
