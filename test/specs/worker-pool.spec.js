@@ -5,6 +5,7 @@ const { createFile } = require("@code-engine/utils");
 const { assert, expect } = require("chai");
 const WorkerPool = require("../utils/worker-pool");
 const createModule = require("../utils/create-module");
+const createContext = require("../utils/create-context");
 const sinon = require("sinon");
 const os = require("os");
 
@@ -52,6 +53,7 @@ describe("WorkerPool class", () => {
     });
 
     let processFile = await pool.loadFileProcessor(moduleId);
+    let context = createContext();
 
     try {
       await processFile(createFile({ path: "file.txt" }), context).next();
