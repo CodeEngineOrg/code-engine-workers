@@ -1,10 +1,12 @@
-import { CloneableObject, Context, LogLevel } from "@code-engine/types";
+import { BuildContext, CloneableObject, LogLevel } from "@code-engine/types";
+import { createChangedFile } from "@code-engine/utils";
 import { LogReply, Reply } from "../messaging/replies";
 import { Messenger } from "../worker-thread/messenger";
 import { cloneError } from "./clone-error";
+import { ChangedFileClone, cloneChangedFile } from "./clone-file";
 
 /**
- * The data necessary to clone a `Context` object across the thread boundary.
+ * The data necessary to clone a `BuildContext` object across the thread boundary.
  * @internal
  */
 export interface ContextClone {
@@ -12,6 +14,9 @@ export interface ContextClone {
   concurrency: number;
   dev: boolean;
   debug: boolean;
+  fullBuild: boolean;
+  partialBuild: boolean;
+  changedFiles: ChangedFileClone[];
 }
 
 
@@ -19,22 +24,22 @@ export interface ContextClone {
  * Returns a cloneable copy of the given context object.
  * @internal
  */
-export function cloneContext(context: Context): ContextClone {
-  return {
-    cwd: context.cwd,
-    concurrency: context.concurrency,
-    dev: context.dev,
-    debug: context.debug,
-  };
+export function cloneContext(context: BuildContext): ContextClone {
+  // tslint:disable-next-line: no-object-literal-type-assertion
+  let clone = { ...context, logger: undefined } as ContextClone;
+  clone.changedFiles = clone.changedFiles.map(cloneChangedFile);
+  return clone;
 }
 
+
 /**
- * Creates a `Context` object from a `ContextClone`.
+ * Creates a `BuildContext` object from a `ContextClone`.
  * @internal
  */
-export function createContext(messenger: Messenger, messageId: number, context: ContextClone): Context {
+export function createContext(messenger: Messenger, messageId: number, context: ContextClone): BuildContext {
   return {
     ...context,
+    changedFiles: context.changedFiles.map((file) => createChangedFile(file)),
     logger: {
       log(message: string, data: CloneableObject) {
         messenger.postReply(createLogReply(LogLevel.Info, messageId, message, data));

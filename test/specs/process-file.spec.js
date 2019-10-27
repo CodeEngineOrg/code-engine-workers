@@ -3,7 +3,7 @@
 const WorkerPool = require("../utils/worker-pool");
 const createModule = require("../utils/create-module");
 const createContext = require("../utils/create-context");
-const { createFile } = require("@code-engine/utils");
+const { createFile, createChangedFile } = require("@code-engine/utils");
 const { assert, expect } = require("chai");
 
 describe("Executor.processFile()", () => {
@@ -74,6 +74,116 @@ describe("Executor.processFile()", () => {
 
     let file2 = await generator.next();
     expect(file2.value).to.deep.equal({ path: "file2.txt" });
+  });
+
+  it("should invoke the FileProcessor without a `this` context", async () => {
+    let moduleId = await createModule(function () {
+      return {
+        path: "file1.txt",
+        text: Object.prototype.toString.call(this)
+      };
+    });
+    let processFile = await pool.loadFileProcessor(moduleId);
+    let generator = processFile(createFile({ path: "file.txt" }), context);
+    let { value } = await generator.next();
+    let file1 = createFile(value);
+
+    expect(file1.text).to.equal("[object Undefined]");
+  });
+
+  it("should send the build context across the thread boundary", async () => {
+    let moduleId = await createModule((file, buildContext) => {
+      return {
+        path: "context-info.json",
+        text: JSON.stringify({
+          keys: Object.keys(buildContext),
+          cwd: buildContext.cwd,
+          dev: buildContext.dev,
+          debug: buildContext.debug,
+          fullBuild: buildContext.fullBuild,
+          partialBuild: buildContext.partialBuild,
+          changedFiles: buildContext.changedFiles,
+        })
+      };
+    });
+
+    let processFile = await pool.loadFileProcessor(moduleId);
+    let generator = processFile(createFile({ path: "file.txt" }), {
+      cwd: "/users/jdoe/desktop",
+      dev: true,
+      debug: false,
+      fullBuild: true,
+      partialBuild: false,
+      changedFiles: [],
+    });
+
+    let result = await generator.next();
+    let json = JSON.parse(Buffer.from(result.value.contents).toString());
+
+    expect(json).to.deep.equal({
+      keys: ["cwd", "dev", "debug", "fullBuild", "partialBuild", "changedFiles", "logger"],
+      cwd: "/users/jdoe/desktop",
+      dev: true,
+      debug: false,
+      fullBuild: true,
+      partialBuild: false,
+      changedFiles: [],
+    });
+  });
+
+  it("should send the changed files across the thread boundary", async () => {
+    let moduleId = await createModule((file, buildContext) => {
+      return {
+        path: "changed-files.json",
+        text: JSON.stringify(buildContext.changedFiles)
+      };
+    });
+
+    context.changedFiles = [
+      createChangedFile({
+        path: "new-file.txt",
+        change: "created",
+        createdAt: new Date("2005-05-05T05:05:05.005Z"),
+        modifiedAt: new Date("2005-05-05T05:05:05.005Z"),
+        metadata: { foo: "bar" },
+        text: "Hello, world! ",
+      }),
+      createChangedFile({
+        path: "deleted-file.txt",
+        change: "deleted",
+        createdAt: new Date("2009-09-09T09:09:09.009Z"),
+        modifiedAt: new Date("2009-09-09T09:09:09.009Z"),
+        metadata: { biz: "baz" },
+        text: "Goodbye, cruel world! ".repeat(5000),
+      }),
+    ];
+
+    let processFile = await pool.loadFileProcessor(moduleId);
+    let generator = processFile(createFile({ path: "file.txt" }), context);
+
+    let result = await generator.next();
+    let json = JSON.parse(Buffer.from(result.value.contents).toString());
+
+    expect(json).to.deep.equal([
+      {
+        path: "new-file.txt",
+        source: "code-engine://plugin/new-file.txt",
+        change: "created",
+        createdAt: "2005-05-05T05:05:05.005Z",
+        modifiedAt: "2005-05-05T05:05:05.005Z",
+        metadata: { foo: "bar" },
+        contents: Buffer.alloc(0).toJSON(),
+      },
+      {
+        path: "deleted-file.txt",
+        source: "code-engine://plugin/deleted-file.txt",
+        change: "deleted",
+        createdAt: "2009-09-09T09:09:09.009Z",
+        modifiedAt: "2009-09-09T09:09:09.009Z",
+        metadata: { biz: "baz" },
+        contents: Buffer.alloc(0).toJSON(),
+      },
+    ]);
   });
 
   it("should invoke the FileProcessor without a `this` context", async () => {

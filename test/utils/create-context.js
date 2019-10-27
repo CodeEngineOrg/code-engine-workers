@@ -7,6 +7,8 @@ module.exports = createContext;
 function createContext (props = {}) {
   return {
     cwd: props.cwd || process.cwd(),
+    fullBuild: true,
+    changedFiles: [],
     logger: props.logger || {
       log: sinon.spy(),
       debug: sinon.spy(),

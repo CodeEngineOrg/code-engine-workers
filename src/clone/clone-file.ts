@@ -1,4 +1,4 @@
-import { CloneableObject, File, SourceMap } from "@code-engine/types";
+import { ChangedFile, CloneableObject, File, FileChange, SourceMap } from "@code-engine/types";
 import { NormalizedFileInfo } from "@code-engine/utils";
 
 /**
@@ -12,7 +12,16 @@ export interface FileClone {
   createdAt?: Date;
   modifiedAt?: Date;
   metadata?: CloneableObject;
-  contents?: string | Buffer | Uint8Array | ArrayBuffer;
+  contents?: Buffer;
+}
+
+/**
+ * The data necessary to clone a `ChangedFile` object across the thread boundary.
+ * @internal
+ */
+export interface ChangedFileClone extends FileClone {
+  change: FileChange;
+  contents: undefined;
 }
 
 
@@ -32,4 +41,13 @@ export function cloneFile(file: File | NormalizedFileInfo): [FileClone, [ArrayBu
   }
 
   return [clone, transferList];
+}
+
+
+/**
+ * Returns a cloneable copy of the given `ChangedFile`.
+ * @internal
+ */
+export function cloneChangedFile(file: ChangedFile): ChangedFileClone {
+  return { ...file, contents: undefined };
 }

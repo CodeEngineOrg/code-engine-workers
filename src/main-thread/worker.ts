@@ -1,4 +1,4 @@
-import { Context, EventName, File, FileInfo, ModuleDefinition } from "@code-engine/types";
+import { BuildContext, Context, EventName, File, FileInfo, Logger, ModuleDefinition } from "@code-engine/types";
 import { log } from "@code-engine/utils";
 import { ono } from "ono";
 import * as path from "path";
@@ -54,7 +54,7 @@ export class Worker extends Messenger {
   /**
    * Processes the given files in the worker thread.
    */
-  public async* processFile(moduleUID: number, file: File, context: Context): AsyncGenerator<FileInfo> {
+  public async* processFile(moduleUID: number, file: File, context: BuildContext): AsyncGenerator<FileInfo> {
     await this._waitUntilOnline;
     this._debug(`CodeEngine worker #${this.threadId} is processing ${file}`, { path: file.path });
 

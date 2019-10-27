@@ -1,4 +1,4 @@
-import { Context, EventName, File, FileProcessor, ModuleDefinition } from "@code-engine/types";
+import { BuildContext, Context, EventName, File, FileProcessor, ModuleDefinition } from "@code-engine/types";
 import { validate } from "@code-engine/utils";
 import { EventEmitter } from "events";
 import { ono } from "ono";
@@ -61,7 +61,7 @@ export class WorkerPool extends EventEmitter {
 
     // Create a CodeEngine FileProcessor function that executes the module on a worker thread
     let plugin = {
-      [name]: (file: File, context: Context) => {
+      [name]: (file: File, context: BuildContext) => {
         // Select a worker from the pool to process the files
         let worker = this._select();
 
