@@ -1,6 +1,6 @@
 {
   "name": "@code-engine/workers",
-  "version": "1.0.0-beta.7",
+  "version": "1.0.0-beta.8",
   "description": "CodeEngine's multi-threaded processing functionality",
   "keywords": [
     "code-engine",
@@ -41,7 +41,7 @@
   },
   "engineStrict": true,
   "devDependencies": {
-    "@code-engine/types": "^1.0.0-beta.5",
+    "@code-engine/types": "^1.0.0-beta.7",
     "@types/chai": "^4.2.4",
     "@types/mocha": "^5.2.7",
     "@types/node": "^12.11.7",
@@ -64,7 +64,7 @@
     "version-bump-prompt": "^5.0.3"
   },
   "dependencies": {
-    "@code-engine/utils": "^1.0.0-beta.11",
+    "@code-engine/utils": "^1.0.0-beta.12",
     "ono": "^5.1.0",
     "resolve-from": "^5.0.0",
     "resolve-global": "^1.0.0"

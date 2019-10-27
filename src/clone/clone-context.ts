@@ -26,8 +26,8 @@ export interface ContextClone {
  */
 export function cloneContext(context: BuildContext): ContextClone {
   // tslint:disable-next-line: no-object-literal-type-assertion
-  let clone = { ...context, logger: undefined } as ContextClone;
-  clone.changedFiles = clone.changedFiles.map(cloneChangedFile);
+  let clone = { ...context, logger: undefined } as unknown as ContextClone;
+  clone.changedFiles = context.changedFiles.map(cloneChangedFile);
   return clone;
 }
 
