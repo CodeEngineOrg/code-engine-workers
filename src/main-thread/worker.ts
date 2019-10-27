@@ -15,14 +15,16 @@ const workerScript = path.join(__dirname, "../worker-thread/index.js");
  * @internal
  */
 export class Worker extends Messenger {
-  private _context: Context;
+  private _cwd: string;
+  private _logger: Logger;
   private _isTerminated: boolean;
   private _waitUntilOnline: Promise<void>;
 
   public constructor(context: Context) {
     super(workerScript);
 
-    this._context = context;
+    this._cwd = context.cwd;
+    this._logger = context.logger;
     this._isTerminated = false;
     this._waitUntilOnline = awaitOnline(this);
 
@@ -39,7 +41,7 @@ export class Worker extends Messenger {
 
     let reply = await this.postMessageAsync({
       type: "loadModule",
-      cwd: this._context.cwd,
+      cwd: this._cwd,
       moduleUID,
       moduleId: module.moduleId,
       data: module.data,
@@ -115,6 +117,6 @@ export class Worker extends Messenger {
    * Logs a debug message for this worker.
    */
   private _debug(message: string, data?: object) {
-    this._context.logger.debug(message, { ...data, workerId: this.threadId });
+    this._logger.debug(message, { ...data, workerId: this.threadId });
   }
 }
