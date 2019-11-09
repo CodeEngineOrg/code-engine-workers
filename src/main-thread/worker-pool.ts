@@ -1,5 +1,5 @@
 import { BuildContext, Context, EventName, File, FileProcessor, ModuleDefinition } from "@code-engine/types";
-import { validate } from "@code-engine/utils";
+import { validate } from "@code-engine/validate";
 import { EventEmitter } from "events";
 import { ono } from "ono";
 import * as os from "os";
@@ -24,7 +24,7 @@ export class WorkerPool extends EventEmitter {
 
   public constructor(concurrency: number, context: Context) {
     super();
-    concurrency = validate.positiveInteger(concurrency, "concurrency", os.cpus().length);
+    concurrency = validate.number.integer.positive(concurrency, "concurrency", os.cpus().length);
 
     if (!context || typeof context.cwd !== "string") {
       throw ono(`A CodeEngine context object is required.`);
