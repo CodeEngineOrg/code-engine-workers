@@ -1,12 +1,11 @@
 import { FileProcessor, FileProcessorFactory } from "@code-engine/types";
-import { createFile, iterate, normalizeFileInfo } from "@code-engine/utils";
+import { createFile, importModule, iterate, normalizeFileInfo } from "@code-engine/utils";
 import { ono } from "ono";
 import { MessagePort } from "worker_threads";
 import { createContext } from "../clone/clone-context";
 import { cloneFile } from "../clone/clone-file";
 import { IncomingMessage, LoadModuleMessage, ProcessFileMessage } from "../messaging/messages";
 import { Messenger } from "../worker-thread/messenger";
-import { importModule } from "./import-module";
 
 /**
  * Executes commands in a worker thread that are sent by a corresponding `Worker` running on the main thread.
@@ -32,7 +31,7 @@ export class Executor extends Messenger {
     let exports = await importModule(moduleId, cwd);
 
     // Get the default export, which must be a function
-    let fn = (exports && exports.default) || exports;
+    let fn = exports.default || exports;
 
     if (typeof fn !== "function") {
       throw ono.type({ workerId: this.threadId, moduleId },
