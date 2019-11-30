@@ -133,6 +133,30 @@ describe("WorkerPool.loadFileProcessor()", () => {
     expect(processFile.name).to.equal("");
   });
 
+  it("should throw an error if the module doesn't exist", async () => {
+    try {
+      await pool.loadFileProcessor("foo-bar");
+      assert.fail("An error should have been thrown");
+    }
+    catch (error) {
+      expect(error).to.be.an.instanceOf(Error);
+      expect(error.message).to.equal("Error loading module: foo-bar \nCannot find module: foo-bar");
+    }
+  });
+
+  it("should throw an error if the module contains syntax errors", async () => {
+    let moduleId = await createModule("hello world");
+
+    try {
+      await pool.loadFileProcessor(moduleId);
+      assert.fail("An error should have been thrown");
+    }
+    catch (error) {
+      expect(error).to.be.an.instanceOf(Error);
+      expect(error.message).to.equal(`Error loading module: ${moduleId} \nUnexpected identifier`);
+    }
+  });
+
   it("should throw an error if the module doesn't export a function", async () => {
     let moduleId = await createModule("Math.PI");
 
@@ -143,7 +167,7 @@ describe("WorkerPool.loadFileProcessor()", () => {
     catch (error) {
       expect(error).to.be.an.instanceOf(TypeError);
       expect(error.message).to.equal(
-        `Error loading module "${moduleId}". CodeEngine plugin modules must export a function.`);
+        `Error loading module: ${moduleId} \nCodeEngine plugin modules must export a function.`);
     }
   });
 
@@ -157,7 +181,7 @@ describe("WorkerPool.loadFileProcessor()", () => {
     catch (error) {
       expect(error).to.be.an.instanceOf(TypeError);
       expect(error.message).to.equal(
-        `Error loading module "${moduleId}". CodeEngine plugin modules must export a function.`);
+        `Error loading module: ${moduleId} \nCodeEngine plugin modules must export a function.`);
     }
   });
 
@@ -174,7 +198,7 @@ describe("WorkerPool.loadFileProcessor()", () => {
     catch (error) {
       expect(error).to.be.an.instanceOf(TypeError);
       expect(error.message).to.equal(
-        `Error loading module "${module.moduleId}". The badFactory function should return a CodeEngine file processor.`);
+        `Error loading module: ${module.moduleId} \nThe badFactory function should return a CodeEngine file processor.`);
     }
   });
 
@@ -191,7 +215,7 @@ describe("WorkerPool.loadFileProcessor()", () => {
     catch (error) {
       expect(error).to.be.an.instanceOf(TypeError);
       expect(error.message).to.equal(
-        `Error loading module "${module.moduleId}". The exported function should return a CodeEngine file processor.`);
+        `Error loading module: ${module.moduleId} \nThe exported function should return a CodeEngine file processor.`);
     }
   });
 

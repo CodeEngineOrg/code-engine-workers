@@ -25,17 +25,22 @@ export class Executor extends Messenger {
    */
   public async loadModule(message: IncomingMessage & LoadModuleMessage): Promise<void> {
     let { moduleUID, moduleId, cwd } = message;
+    let fn: FileProcessor | FileProcessorFactory;
     let fileProcessor: FileProcessor;
 
-    // Import the plugin module
-    let exports = await importModule(moduleId, cwd);
+    try {
+      // Import the plugin module
+      let exports = await importModule(moduleId, cwd);
+      fn = exports.default as FileProcessor | FileProcessorFactory;
+    }
+    catch (error) {
+      throw ono(error, { workerId: this.threadId, moduleId }, `Error loading module: ${moduleId}`);
+    }
 
     // Get the default export, which must be a function
-    let fn = exports.default || exports;
-
     if (typeof fn !== "function") {
       throw ono.type({ workerId: this.threadId, moduleId },
-        `Error loading module "${moduleId}". CodeEngine plugin modules must export a function.`);
+        `Error loading module: ${moduleId} \nCodeEngine plugin modules must export a function.`);
     }
 
     if (message.data === undefined) {
@@ -49,7 +54,7 @@ export class Executor extends Messenger {
 
       if (typeof fileProcessor !== "function") {
         throw ono.type({ workerId: this.threadId, moduleId },
-          `Error loading module "${moduleId}". The ${fn.name || "exported"} function should return a CodeEngine file processor.`);
+          `Error loading module: ${moduleId} \nThe ${fn.name || "exported"} function should return a CodeEngine file processor.`);
       }
     }
 

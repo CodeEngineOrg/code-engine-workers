@@ -64,7 +64,7 @@
     "version-bump-prompt": "^5.0.6"
   },
   "dependencies": {
-    "@code-engine/utils": "0.0.7",
+    "@code-engine/utils": "0.0.8",
     "@code-engine/validate": "0.0.1",
     "ono": "^5.1.0",
     "resolve-from": "^5.0.0",
