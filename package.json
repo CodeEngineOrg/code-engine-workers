@@ -1,6 +1,6 @@
 {
   "name": "@code-engine/workers",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "CodeEngine's multi-threaded processing functionality",
   "keywords": [
     "code-engine",
