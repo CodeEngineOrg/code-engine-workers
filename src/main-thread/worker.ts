@@ -1,10 +1,11 @@
-import { BuildContext, Context, EventName, File, FileInfo, Logger, ModuleDefinition } from "@code-engine/types";
+import { BuildContext, Context, EventName, File, FileInfo, Logger } from "@code-engine/types";
 import { log } from "@code-engine/utils";
 import { ono } from "ono";
 import * as path from "path";
 import { cloneContext } from "../clone/clone-context";
 import { cloneFile } from "../clone/clone-file";
-import { LoadModuleReply } from "../messaging/replies";
+import { ImportFileProcessorMessage, ImportModuleMessage } from "../messaging/messages";
+import { ImportFileProcessorReply } from "../messaging/replies";
 import { awaitOnline } from "./await-online";
 import { Messenger } from "./messenger";
 
@@ -15,7 +16,6 @@ const workerScript = path.join(__dirname, "../worker-thread/index.js");
  * @internal
  */
 export class Worker extends Messenger {
-  private _cwd: string;
   private _logger: Logger;
   private _isTerminated: boolean;
   private _waitUntilOnline: Promise<void>;
@@ -23,7 +23,6 @@ export class Worker extends Messenger {
   public constructor(context: Context) {
     super(workerScript);
 
-    this._cwd = context.cwd;
     this._logger = context.logger;
     this._isTerminated = false;
     this._waitUntilOnline = awaitOnline(this);
@@ -33,22 +32,23 @@ export class Worker extends Messenger {
   }
 
   /**
-   * Loads the specified JavaScript module in the worker thread.
+   * Imports the specified `FileProcessor` module in the worker thread.
    */
-  public async loadModule(module: ModuleDefinition, moduleUID: number): Promise<string> {
+  public async importFileProcessor(module: ImportFileProcessorMessage): Promise<string> {
     await this._waitUntilOnline;
     this._debug(`CodeEngine worker #${this.threadId} is loading ${module.moduleId}`, { moduleId: module.moduleId });
 
-    let reply = await this.postMessageAsync({
-      type: "loadModule",
-      cwd: this._cwd,
-      moduleUID,
-      moduleId: module.moduleId,
-      data: module.data,
-    });
+    let reply = await this.postMessageAsync(module) as ImportFileProcessorReply;
+    return reply.name;
+  }
 
-    // Return the name of the module's export
-    return (reply as LoadModuleReply).name;
+  /**
+   * Imports the specified JavaScript module in the worker thread.
+   */
+  public async importModule(module: ImportModuleMessage): Promise<void> {
+    await this._waitUntilOnline;
+    this._debug(`CodeEngine worker #${this.threadId} is importing ${module.moduleId}`, { moduleId: module.moduleId });
+    await this.postMessageAsync(module);
   }
 
   /**

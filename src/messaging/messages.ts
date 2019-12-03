@@ -1,4 +1,4 @@
-import { ModuleDefinition } from "@code-engine/types";
+import { FileProcessor, ModuleDefinition } from "@code-engine/types";
 import { ContextClone } from "../clone/clone-context";
 import { FileClone } from "../clone/clone-file";
 
@@ -26,20 +26,34 @@ export interface IncomingMessage {
  * The messages that can be sent from a `Worker` to an `Executor`.
  * @internal
  */
-export type Message = LoadModuleMessage | ProcessFileMessage;
+export type Message = ImportFileProcessorMessage | ImportModuleMessage | ProcessFileMessage;
 
 
 /**
- * A message that instructs a `Worker` or `Executor` to load a module.
+ * A message that instructs a `Worker` or `Executor` to import a `FileProcessor` module.
  * @internal
  */
-export interface LoadModuleMessage extends ModuleDefinition {
-  type: "loadModule";
+export interface ImportFileProcessorMessage extends ModuleDefinition<FileProcessor> {
+  type: "importFileProcessor";
 
   /**
    * A unique ID that is assigned to each module so they can be referenced across thread boundaries.
    */
   moduleUID: number;
+
+  /**
+   * The directory to resolve relative module IDs.
+   */
+  cwd: string;
+}
+
+
+/**
+ * A message that instructs a `Worker` or `Executor` to import a module.
+ * @internal
+ */
+export interface ImportModuleMessage extends ModuleDefinition<void> {
+  type: "importModule";
 
   /**
    * The directory to resolve relative module IDs.

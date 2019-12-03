@@ -7,7 +7,7 @@ import { FileClone } from "../clone/clone-file";
  * The replies that can be sent from an `Executor` to a `Worker` in response to a message.
  * @internal
  */
-export type Reply = { to: number } & (FinishedReply | ErrorReply | LoadModuleReply | LogReply | OutputFileReply);
+export type Reply = { to: number } & (FinishedReply | ErrorReply | ImportFileProcessorReply | LogReply | OutputFileReply);
 
 
 /**
@@ -36,14 +36,14 @@ export interface ErrorReply {
 
 
 /**
- * A reply from an `Executor` to a `Worker` confirming that a module has been loaded successfully.
+ * A reply from an `Executor` to a `Worker` confirming that a `FileProcessor` module has been imported successfully.
  * @internal
  */
-export interface LoadModuleReply {
-  type: "moduleLoaded";
+export interface ImportFileProcessorReply {
+  type: "fileProcessorImported";
 
   /**
-   * The name of the module's export.
+   * The name of the `FileProcessor` function.
    */
   name: string;
 }

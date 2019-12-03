@@ -1,6 +1,6 @@
 import { MessagePort } from "worker_threads";
 import { cloneError } from "../clone/clone-error";
-import { IncomingMessage, LoadModuleMessage, Message, ProcessFileMessage } from "../messaging/messages";
+import { ImportFileProcessorMessage, ImportModuleMessage, IncomingMessage, Message, ProcessFileMessage } from "../messaging/messages";
 import { Reply } from "../messaging/replies";
 
 
@@ -17,9 +17,14 @@ export abstract class Messenger {
   }
 
   /**
-   * Loads the specified JavaScript module.
+   * Imports the specified `FileProcessor` module.
    */
-  public abstract async loadModule(message: IncomingMessage & LoadModuleMessage): Promise<void>;
+  public abstract async importFileProcessor(message: IncomingMessage & ImportFileProcessorMessage): Promise<void>;
+
+  /**
+   * Imports the specified JavaScript module.
+   */
+  public abstract async importModule(message: IncomingMessage & ImportModuleMessage): Promise<void>;
 
   /**
    * Processes a file using the specified plugin.
@@ -40,8 +45,12 @@ export abstract class Messenger {
     try {
       // tslint:disable-next-line: switch-default
       switch (message.type) {
-        case "loadModule":
-          await this.loadModule(message);
+        case "importFileProcessor":
+          await this.importFileProcessor(message);
+          break;
+
+        case "importModule":
+          await this.importModule(message);
           break;
 
         case "processFile":

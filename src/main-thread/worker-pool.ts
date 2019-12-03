@@ -3,6 +3,7 @@ import { validate } from "@code-engine/validate";
 import { EventEmitter } from "events";
 import { ono } from "ono";
 import * as os from "os";
+import { ImportFileProcessorMessage, ImportModuleMessage } from "../messaging/messages";
 import { Worker } from "./worker";
 
 
@@ -22,14 +23,14 @@ export class WorkerPool extends EventEmitter {
   /** @internal */
   private _roundRobinCounter = 0;
 
+  /** @internal */
+  private _cwd: string;
+
   public constructor(concurrency: number, context: Context) {
     super();
     concurrency = validate.number.integer.positive(concurrency, "concurrency", os.cpus().length);
-
-    if (!context || typeof context.cwd !== "string") {
-      throw ono(`A CodeEngine context object is required.`);
-    }
-
+    validate.type.object(context, "context");
+    this._cwd = validate.string.nonWhitespace(context.cwd, "context.cwd");
     this._createWorkers(concurrency, context);
   }
 
@@ -50,14 +51,21 @@ export class WorkerPool extends EventEmitter {
 
 
   /**
-   * Loads the specified JavaScript module in all worker threads and returns a `FileProcessor` wrapper
-   * that executes the module in one of the threads.
+   * Imports the specified `FileProcessor` module in all worker threads.
+   *
+   * @returns - A proxy function that executes the processor in one of the threads.
    */
-  public async loadFileProcessor(module: string | ModuleDefinition): Promise<FileProcessor> {
+  public async importFileProcessor(module: string | ModuleDefinition<FileProcessor>): Promise<FileProcessor> {
     this._assertNotDisposed();
+    let { moduleId, data } = normalizeModule(module);
+    let cwd = this._cwd;
+    let moduleUID = ++this._moduleCounter;
+    let message: ImportFileProcessorMessage = { type: "importFileProcessor", cwd, moduleUID, moduleId, data };
 
-    // Load the JavaScript module in all worker threads
-    let [moduleUID, name] = await this._loadModule(module);
+    // Import the JavaScript module in all worker threads
+    let [name] = await Promise.all(
+      this._workers.map((worker) => worker.importFileProcessor(message))
+    );
 
     // Create a CodeEngine FileProcessor function that executes the module on a worker thread
     let plugin = {
@@ -72,6 +80,22 @@ export class WorkerPool extends EventEmitter {
 
     // Return the FileProcessor function with the same name as the one in the module
     return plugin[name];
+  }
+
+
+  /**
+   * Imports the specified JavaScript module in all worker threads.
+   */
+  public async importModule(module: string | ModuleDefinition<void>): Promise<void> {
+    this._assertNotDisposed();
+    let { moduleId, data } = normalizeModule(module);
+    let cwd = this._cwd;
+    let message: ImportModuleMessage = { type: "importModule", cwd,  moduleId, data };
+
+    // Import the JavaScript module in all worker threads
+    await Promise.all(
+      this._workers.map((worker) => worker.importModule(message))
+    );
   }
 
 
@@ -101,27 +125,6 @@ export class WorkerPool extends EventEmitter {
     }
   }
 
-
-  /**
-   * Loads the specified JavaScript module into all worker threads.
-   * @internal
-   */
-  private async _loadModule(module: ModuleDefinition | string): Promise<[number, string]> {
-    if (typeof module === "string") {
-      module = { moduleId: module };
-    }
-
-    // Create a unique ID that will be used to reference this module from now on.
-    let moduleUID = ++this._moduleCounter;
-
-    let [name] = await Promise.all(
-        this._workers.map((worker) => worker.loadModule(module as ModuleDefinition, moduleUID))
-      );
-
-    return [moduleUID, name];
-  }
-
-
   /**
    * Selects a `Worker` from the pool to perform a task.
    * @internal
@@ -141,5 +144,18 @@ export class WorkerPool extends EventEmitter {
     if (this.isDisposed) {
       throw ono(`CodeEngine cannot be used after it has been disposed.`);
     }
+  }
+}
+
+
+/**
+ * Normalizes a module definition.
+ */
+function normalizeModule<T>(module: string | ModuleDefinition<T>): ModuleDefinition<T> {
+  if (typeof module === "string") {
+    return { moduleId: module };
+  }
+  else {
+    return module;
   }
 }
