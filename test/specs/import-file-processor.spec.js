@@ -6,7 +6,7 @@ const createContext = require("../utils/create-context");
 const { createFile } = require("@code-engine/utils");
 const { assert, expect } = require("chai");
 
-describe("WorkerPool.loadFileProcessor()", () => {
+describe("WorkerPool.importFileProcessor()", () => {
   let context, pool;
 
   beforeEach("create a new WorkerPool and Context", () => {
@@ -14,27 +14,27 @@ describe("WorkerPool.loadFileProcessor()", () => {
     pool = WorkerPool.create(undefined, context);
   });
 
-  it("should load a module from a moduleId (string)", async () => {
+  it("should import a module from a moduleId (string)", async () => {
     let moduleId = await createModule((file) => file);
-    let processFile = await pool.loadFileProcessor(moduleId);
+    let processFile = await pool.importFileProcessor(moduleId);
     expect(moduleId).to.be.a("string");
     expect(processFile).to.be.a("function");
   });
 
-  it("should load a module from a module definition (object)", async () => {
+  it("should import a module from a module definition (object)", async () => {
     let module = await createModule(() => (file) => file, { some: "data" });
-    let processFile = await pool.loadFileProcessor(module);
+    let processFile = await pool.importFileProcessor(module);
     expect(module).to.be.an("object");
     expect(processFile).to.be.a("function");
   });
 
-  it("should load a CommonJS module", async () => {
+  it("should import a CommonJS module", async () => {
     let moduleId = await createModule((file) => {
       file.text = "Hi, from CommonJS!";
       return file;
     });
 
-    let processFile = await pool.loadFileProcessor(moduleId);
+    let processFile = await pool.importFileProcessor(moduleId);
     let generator = processFile(createFile({ path: "file.txt" }), context);
     let { value } = await generator.next();
     let file = createFile(value);
@@ -42,12 +42,12 @@ describe("WorkerPool.loadFileProcessor()", () => {
     expect(file.text).to.equal("Hi, from CommonJS!");
   });
 
-  it("should load an ECMAScript module", async () => {
+  it("should import an ECMAScript module", async () => {
     let moduleId = await createModule(`{
       default: (file) => (file.text = "Hi, from ECMAScript!", file)
     }`);
 
-    let processFile = await pool.loadFileProcessor(moduleId);
+    let processFile = await pool.importFileProcessor(moduleId);
     let generator = processFile(createFile({ path: "file.txt" }), context);
     let { value } = await generator.next();
     let file = createFile(value);
@@ -55,13 +55,13 @@ describe("WorkerPool.loadFileProcessor()", () => {
     expect(file.text).to.equal("Hi, from ECMAScript!");
   });
 
-  it("should load a CommonJS module with data", async () => {
+  it("should import a CommonJS module with data", async () => {
     let moduleId = await createModule((data) => (file) => {
       file.text = data;
       return file;
     }, "CommonJS module with data");
 
-    let processFile = await pool.loadFileProcessor(moduleId);
+    let processFile = await pool.importFileProcessor(moduleId);
     let generator = processFile(createFile({ path: "file.txt" }), context);
     let { value } = await generator.next();
     let file = createFile(value);
@@ -69,12 +69,12 @@ describe("WorkerPool.loadFileProcessor()", () => {
     expect(file.text).to.equal("CommonJS module with data");
   });
 
-  it("should load an ECMAScript module with data", async () => {
+  it("should import an ECMAScript module with data", async () => {
     let module = await createModule(`{
       default: (data) => (file) => (file.text = data, file)
     }`, "ECMAScript module with data");
 
-    let processFile = await pool.loadFileProcessor(module);
+    let processFile = await pool.importFileProcessor(module);
     let generator = processFile(createFile({ path: "file.txt" }), context);
     let { value } = await generator.next();
     let file = createFile(value);
@@ -82,7 +82,7 @@ describe("WorkerPool.loadFileProcessor()", () => {
     expect(file.text).to.equal("ECMAScript module with data");
   });
 
-  it("should load an asynchronous module", async () => {
+  it("should import an asynchronous module", async () => {
     async function fileProcessor (file) {
       let before = Date.now();
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -92,7 +92,7 @@ describe("WorkerPool.loadFileProcessor()", () => {
     }
 
     let moduleId = await createModule(fileProcessor);
-    let processFile = await pool.loadFileProcessor(moduleId);
+    let processFile = await pool.importFileProcessor(moduleId);
     let generator = processFile(createFile({ path: "file.txt" }), context);
     let { value } = await generator.next();
     let file = createFile(value);
@@ -100,7 +100,7 @@ describe("WorkerPool.loadFileProcessor()", () => {
     expect(file.text).to.match(/^1\d\dms$/);
   });
 
-  it("should load an asynchronous module with data", async () => {
+  it("should import an asynchronous module with data", async () => {
     async function factory (data) {
       let before = Date.now();
       await new Promise((resolve) => setTimeout(resolve, data));
@@ -113,7 +113,7 @@ describe("WorkerPool.loadFileProcessor()", () => {
     }
 
     let moduleId = await createModule(factory, 500);
-    let processFile = await pool.loadFileProcessor(moduleId);
+    let processFile = await pool.importFileProcessor(moduleId);
     let generator = processFile(createFile({ path: "file.txt" }), context);
     let { value } = await generator.next();
     let file = createFile(value);
@@ -123,24 +123,24 @@ describe("WorkerPool.loadFileProcessor()", () => {
 
   it("should retain the FileProcessor name", async () => {
     let moduleId = await createModule(function myAwesomeFileProcessor () {});
-    let processFile = await pool.loadFileProcessor(moduleId);
+    let processFile = await pool.importFileProcessor(moduleId);
     expect(processFile.name).to.equal("myAwesomeFileProcessor");
   });
 
   it("should support unnamed FileProcessors", async () => {
     let moduleId = await createModule((file) => file);
-    let processFile = await pool.loadFileProcessor(moduleId);
+    let processFile = await pool.importFileProcessor(moduleId);
     expect(processFile.name).to.equal("");
   });
 
   it("should throw an error if the module doesn't exist", async () => {
     try {
-      await pool.loadFileProcessor("foo-bar");
+      await pool.importFileProcessor("foo-bar");
       assert.fail("An error should have been thrown");
     }
     catch (error) {
       expect(error).to.be.an.instanceOf(Error);
-      expect(error.message).to.equal("Error loading module: foo-bar \nCannot find module: foo-bar");
+      expect(error.message).to.equal("Error importing module: foo-bar \nCannot find module: foo-bar");
     }
   });
 
@@ -148,12 +148,12 @@ describe("WorkerPool.loadFileProcessor()", () => {
     let moduleId = await createModule("hello world");
 
     try {
-      await pool.loadFileProcessor(moduleId);
+      await pool.importFileProcessor(moduleId);
       assert.fail("An error should have been thrown");
     }
     catch (error) {
       expect(error).to.be.an.instanceOf(Error);
-      expect(error.message).to.equal(`Error loading module: ${moduleId} \nUnexpected identifier`);
+      expect(error.message).to.equal(`Error importing module: ${moduleId} \nUnexpected identifier`);
     }
   });
 
@@ -161,13 +161,14 @@ describe("WorkerPool.loadFileProcessor()", () => {
     let moduleId = await createModule("Math.PI");
 
     try {
-      await pool.loadFileProcessor(moduleId);
+      await pool.importFileProcessor(moduleId);
       assert.fail("An error should have been thrown");
     }
     catch (error) {
       expect(error).to.be.an.instanceOf(TypeError);
       expect(error.message).to.equal(
-        `Error loading module: ${moduleId} \nCodeEngine plugin modules must export a function.`);
+        `Error importing module: ${moduleId} \n` +
+        "The module exported 3.141592653589793. CodeEngine plugin modules must export a function.");
     }
   });
 
@@ -175,13 +176,14 @@ describe("WorkerPool.loadFileProcessor()", () => {
     let moduleId = await createModule("undefined");
 
     try {
-      await pool.loadFileProcessor(moduleId);
+      await pool.importFileProcessor(moduleId);
       assert.fail("An error should have been thrown");
     }
     catch (error) {
       expect(error).to.be.an.instanceOf(TypeError);
       expect(error.message).to.equal(
-        `Error loading module: ${moduleId} \nCodeEngine plugin modules must export a function.`);
+        `Error importing module: ${moduleId} \n` +
+        "CodeEngine plugin modules must export a function.");
     }
   });
 
@@ -192,13 +194,14 @@ describe("WorkerPool.loadFileProcessor()", () => {
     );
 
     try {
-      await pool.loadFileProcessor(module);
+      await pool.importFileProcessor(module);
       assert.fail("An error should have been thrown");
     }
     catch (error) {
       expect(error).to.be.an.instanceOf(TypeError);
       expect(error.message).to.equal(
-        `Error loading module: ${module.moduleId} \nThe badFactory function should return a CodeEngine file processor.`);
+        `Error importing module: ${module.moduleId} \n` +
+        'The badFactory function returned "Hello, World". Expected a CodeEngine file processor.');
     }
   });
 
@@ -209,13 +212,14 @@ describe("WorkerPool.loadFileProcessor()", () => {
     );
 
     try {
-      await pool.loadFileProcessor(module);
+      await pool.importFileProcessor(module);
       assert.fail("An error should have been thrown");
     }
     catch (error) {
       expect(error).to.be.an.instanceOf(TypeError);
       expect(error.message).to.equal(
-        `Error loading module: ${module.moduleId} \nThe exported function should return a CodeEngine file processor.`);
+        `Error importing module: ${module.moduleId} \n` +
+        "The exported function must return a CodeEngine file processor.");
     }
   });
 

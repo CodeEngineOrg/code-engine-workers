@@ -25,7 +25,7 @@ describe("WorkerPool messaging between threads", () => {
       logger.debug("This is a debug message", { biz: "baz" });
     });
 
-    let processFile = await pool.loadFileProcessor(moduleId);
+    let processFile = await pool.importFileProcessor(moduleId);
     await processFile(createFile({ path: "file.txt" }), context).next();
 
     // Each log method should have been called once
@@ -55,7 +55,7 @@ describe("WorkerPool messaging between threads", () => {
       logger.debug("This is a debug message", { biz: "baz" });
     });
 
-    let processFile = await pool.loadFileProcessor(moduleId);
+    let processFile = await pool.importFileProcessor(moduleId);
     await processFile(createFile({ path: "file.txt" }), context).next();
 
     // Lots of debug messages get logged for various things.
@@ -64,7 +64,7 @@ describe("WorkerPool messaging between threads", () => {
     expect(debugLogs).to.have.lengthOf(0);
   });
 
-  it("should send errors from worker threads to the main thread while loading a module", async () => {
+  it("should send errors from worker threads to the main thread while importing a module", async () => {
     let moduleId = await createModule(
       (data) => {
         let error = new URIError("Boom!");
@@ -79,7 +79,7 @@ describe("WorkerPool messaging between threads", () => {
     );
 
     try {
-      await pool.loadFileProcessor(moduleId);
+      await pool.importFileProcessor(moduleId);
       assert.fail("An error should have been thrown");
     }
     catch (error) {
@@ -98,7 +98,7 @@ describe("WorkerPool messaging between threads", () => {
 
   it("should send errors from worker threads to the main thread while processing a file", async () => {
     let moduleId = await createModule(() => { throw new RangeError("It's out of range!"); });
-    let processFile = await pool.loadFileProcessor(moduleId);
+    let processFile = await pool.importFileProcessor(moduleId);
 
     try {
       await processFile(createFile({ path: "file.txt" }), context).next();
@@ -130,7 +130,7 @@ describe("WorkerPool messaging between threads", () => {
       throw new MyCustomError();
     });
 
-    let processFile = await pool.loadFileProcessor(moduleId);
+    let processFile = await pool.importFileProcessor(moduleId);
 
     try {
       await processFile(createFile({ path: "file.txt" }), context).next();
@@ -156,7 +156,7 @@ describe("WorkerPool messaging between threads", () => {
       () => { throw "This is not an error"; },  // eslint-disable-line no-throw-literal
     );
 
-    let processFile = await pool.loadFileProcessor(moduleId);
+    let processFile = await pool.importFileProcessor(moduleId);
 
     try {
       await processFile(createFile({ path: "file.txt" }), context).next();
@@ -172,7 +172,7 @@ describe("WorkerPool messaging between threads", () => {
       () => { throw "This is not an error"; },  // eslint-disable-line no-throw-literal
     );
 
-    let processFile = await pool.loadFileProcessor(moduleId);
+    let processFile = await pool.importFileProcessor(moduleId);
 
     try {
       await processFile(createFile({ path: "file.txt" }), context).next();

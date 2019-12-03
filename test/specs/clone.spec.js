@@ -377,7 +377,7 @@ async function testClone (data, mutate = () => undefined) {
     metadata: data,                                           // <--- The original data
   });
 
-  let processFile = await pool.loadFileProcessor(await createModule(
+  let processFile = await pool.importFileProcessor(await createModule(
     // eslint-disable-next-line no-new-func
     new Function("file", "context", `
       context.logger.log("data", file.metadata);              // <--- Log the cloned data

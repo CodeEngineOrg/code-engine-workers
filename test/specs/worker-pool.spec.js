@@ -27,7 +27,7 @@ describe("WorkerPool class", () => {
     }
 
     expect(noArgs).to.throw(Error);
-    expect(noArgs).to.throw("A CodeEngine context object is required.");
+    expect(noArgs).to.throw("Invalid context: undefined. A value is required.");
   });
 
   it("should throw an error if called without a context object", async () => {
@@ -36,7 +36,7 @@ describe("WorkerPool class", () => {
     }
 
     expect(noContext).to.throw(Error);
-    expect(noContext).to.throw("A CodeEngine context object is required.");
+    expect(noContext).to.throw("Invalid context: undefined. A value is required.");
   });
 
   it("should emit an error event if a worker crashes", async () => {
@@ -52,7 +52,7 @@ describe("WorkerPool class", () => {
       process.exit(27);
     });
 
-    let processFile = await pool.loadFileProcessor(moduleId);
+    let processFile = await pool.importFileProcessor(moduleId);
     let context = createContext();
 
     try {
@@ -154,7 +154,7 @@ describe("WorkerPool class", () => {
       await pool.dispose();
 
       try {
-        await pool.loadFileProcessor({ moduleId: "foobar" });
+        await pool.importFileProcessor({ moduleId: "foobar" });
         assert.fail("WorkerPool should have thrown an error");
       }
       catch (error) {
