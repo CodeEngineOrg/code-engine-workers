@@ -43,9 +43,8 @@ describe("WorkerPool.importFileProcessor()", () => {
   });
 
   it("should import an ECMAScript module", async () => {
-    let moduleId = await createModule(`{
-      default: (file) => (file.text = "Hi, from ECMAScript!", file)
-    }`);
+    let moduleId = await createModule(
+      'exports.default = (file) => (file.text = "Hi, from ECMAScript!", file)');
 
     let processFile = await pool.importFileProcessor(moduleId);
     let generator = processFile(createFile({ path: "file.txt" }), context);
@@ -70,9 +69,9 @@ describe("WorkerPool.importFileProcessor()", () => {
   });
 
   it("should import an ECMAScript module with data", async () => {
-    let module = await createModule(`{
-      default: (data) => (file) => (file.text = data, file)
-    }`, "ECMAScript module with data");
+    let module = await createModule(
+      "exports.default = (data) => (file) => (file.text = data, file)",
+      "ECMAScript module with data");
 
     let processFile = await pool.importFileProcessor(module);
     let generator = processFile(createFile({ path: "file.txt" }), context);
@@ -145,7 +144,7 @@ describe("WorkerPool.importFileProcessor()", () => {
   });
 
   it("should throw an error if the module contains syntax errors", async () => {
-    let moduleId = await createModule("hello world");
+    let moduleId = await createModule("module.exports = hello world");
 
     try {
       await pool.importFileProcessor(moduleId);
@@ -158,7 +157,7 @@ describe("WorkerPool.importFileProcessor()", () => {
   });
 
   it("should throw an error if the module doesn't export a function", async () => {
-    let moduleId = await createModule("Math.PI");
+    let moduleId = await createModule("module.exports = Math.PI");
 
     try {
       await pool.importFileProcessor(moduleId);
@@ -173,7 +172,7 @@ describe("WorkerPool.importFileProcessor()", () => {
   });
 
   it("should throw an error if the module doesn't export anything", async () => {
-    let moduleId = await createModule("undefined");
+    let moduleId = await createModule("module.exports = undefined");
 
     try {
       await pool.importFileProcessor(moduleId);
