@@ -1,6 +1,6 @@
 import { stringify } from "@code-engine/stringify";
 import { FactoryFunction, FileProcessor } from "@code-engine/types";
-import { createFile, importModule, iterate, normalizeFileInfo } from "@code-engine/utils";
+import { createFile, importModule, iterate, normalizeFileInfo, typedOno } from "@code-engine/utils";
 import { ono } from "ono";
 import { MessagePort } from "worker_threads";
 import { createContext } from "../clone/clone-context";
@@ -27,60 +27,53 @@ export class Executor extends Messenger {
   public async importFileProcessor(message: IncomingMessage & ImportFileProcessorMessage): Promise<void> {
     let { moduleUID, moduleId, cwd } = message;
     let fileProcessor: FileProcessor;
-    let defaultExport: unknown;
 
     try {
       // Import the plugin module
       let exports = await importModule(moduleId, cwd);
-      defaultExport = exports.default;
+      let defaultExport = exports.default;
+
+      if (defaultExport === undefined || defaultExport === null) {
+        throw ono.type(`CodeEngine plugin modules must export a function.`);
+      }
+      else if (typeof defaultExport !== "function") {
+        throw ono.type(
+          `The module exported ${stringify(defaultExport, { article: true })}. ` +
+          `CodeEngine plugin modules must export a function.`);
+      }
+
+      // This could be a FileProcessor or a FactoryFunction
+      if (message.data === undefined) {
+        // The exported function is a FileProcessor
+        fileProcessor = defaultExport as FileProcessor;
+      }
+      else {
+        // The exported function is a FactoryFunction, so call the factory with the given data.
+        let factory = defaultExport as FactoryFunction;
+        let product = await Promise.resolve(factory(message.data));
+
+        if (product === undefined || product === null) {
+          throw ono.type(`The ${factory.name || "exported"} function must return a CodeEngine file processor.`);
+        }
+        else if (typeof product !== "function") {
+          throw ono.type(
+            `The ${factory.name || "exported"} function returned ${stringify(product, { article: true })}. ` +
+            "Expected a CodeEngine file processor.");
+        }
+
+        // The factory produced a FileProcessor
+        fileProcessor = product as FileProcessor;
+      }
+
+      // Store the FileProcessor so we can call it later
+      this._processors.set(moduleUID, fileProcessor);
+
+      // Reply with information about the module
+      this.postReply({ to: message.id, type: "fileProcessorImported", name: fileProcessor.name });
     }
     catch (error) {
-      throw ono(error, { workerId: this.threadId, moduleId }, `Error importing module: ${moduleId}`);
+      throw typedOno(error, { workerId: this.threadId, moduleId }, `Error importing module: ${moduleId}`);
     }
-
-    if (defaultExport === undefined || defaultExport === null) {
-      throw ono.type({ workerId: this.threadId, moduleId },
-        `Error importing module: ${moduleId} \n` +
-        `CodeEngine plugin modules must export a function.`);
-    }
-    else if (typeof defaultExport !== "function") {
-      throw ono.type({ workerId: this.threadId, moduleId },
-        `Error importing module: ${moduleId} \n` +
-        `The module exported ${stringify(defaultExport, { article: true })}. ` +
-        `CodeEngine plugin modules must export a function.`);
-    }
-
-    // This could be a FileProcessor or a FactoryFunction
-    if (message.data === undefined) {
-      // The exported function is a FileProcessor
-      fileProcessor = defaultExport as FileProcessor;
-    }
-    else {
-      // The exported function is a FactoryFunction, so call the factory with the given data.
-      let factory = defaultExport as FactoryFunction<FileProcessor | void>;
-      let product = await factory(message.data);
-
-      if (product === undefined || product === null) {
-        throw ono.type({ workerId: this.threadId, moduleId },
-          `Error importing module: ${moduleId} \n` +
-          `The ${factory.name || "exported"} function must return a CodeEngine file processor.`);
-      }
-      else if (typeof product !== "function") {
-        throw ono.type({ workerId: this.threadId, moduleId },
-          `Error importing module: ${moduleId} \n` +
-          `The ${factory.name || "exported"} function returned ${stringify(product, { article: true })}. ` +
-          "Expected a CodeEngine file processor.");
-      }
-
-      // The factory produced a FileProcessor
-      fileProcessor = product;
-    }
-
-    // Store the FileProcessor so we can call it later
-    this._processors.set(moduleUID, fileProcessor);
-
-    // Reply with information about the module
-    this.postReply({ to: message.id, type: "fileProcessorImported", name: fileProcessor.name });
   }
 
   /**
@@ -88,25 +81,24 @@ export class Executor extends Messenger {
    */
   public async importModule(message: IncomingMessage & ImportModuleMessage): Promise<void> {
     let { moduleId, cwd } = message;
-    let defaultExport: unknown;
 
     try {
       // Import the plugin module
       let exports = await importModule(moduleId, cwd);
-      defaultExport = exports.default || exports;
+      let defaultExport = exports.default || exports;
+
+      if (typeof defaultExport === "function") {
+        // Call the exported function with the given data
+        let factory = defaultExport as FactoryFunction;
+        await Promise.resolve(factory(message.data));
+      }
+
+      // Reply that we're done importing the module
+      this.postReply({ to: message.id, type: "finished" });
     }
     catch (error) {
-      throw ono(error, { workerId: this.threadId, moduleId }, `Error importing module: ${moduleId}`);
+      throw typedOno(error, { workerId: this.threadId, moduleId }, `Error importing module: ${moduleId}`);
     }
-
-    if (typeof defaultExport === "function") {
-      // Call the exported function with the given data
-      let factory = defaultExport as FactoryFunction;
-      await Promise.resolve(factory(message.data));
-    }
-
-    // Reply that we're done importing the module
-    this.postReply({ to: message.id, type: "finished" });
   }
 
   /**

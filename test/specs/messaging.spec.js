@@ -65,7 +65,7 @@ describe("WorkerPool messaging between threads", () => {
   });
 
   it("should send errors from worker threads to the main thread while importing a module", async () => {
-    let moduleId = await createModule(
+    let module = await createModule(
       (data) => {
         let error = new URIError("Boom!");
         Object.assign(error, data);
@@ -79,16 +79,18 @@ describe("WorkerPool messaging between threads", () => {
     );
 
     try {
-      await pool.importFileProcessor(moduleId);
+      await pool.importFileProcessor(module);
       assert.fail("An error should have been thrown");
     }
     catch (error) {
       expect(error).to.be.an.instanceOf(URIError);
-      expect(error.message).to.equal("Boom!");
+      expect(error.message).to.equal(`Error importing module: ${module.moduleId} \nBoom!`);
       expect(error.toJSON()).to.deep.equal({
         name: "URIError",
-        message: "Boom!",
+        message: `Error importing module: ${module.moduleId} \nBoom!`,
         stack: error.stack,
+        moduleId: module.moduleId,
+        workerId: error.workerId,
         foo: "bar",
         answer: 42,
         when: new Date("2005-05-05T05:05:05.005Z")

@@ -151,7 +151,7 @@ describe("WorkerPool.importFileProcessor()", () => {
       assert.fail("An error should have been thrown");
     }
     catch (error) {
-      expect(error).to.be.an.instanceOf(Error);
+      expect(error).to.be.an.instanceOf(SyntaxError);
       expect(error.message).to.equal(`Error importing module: ${moduleId} \nUnexpected identifier`);
     }
   });
@@ -183,6 +183,26 @@ describe("WorkerPool.importFileProcessor()", () => {
       expect(error.message).to.equal(
         `Error importing module: ${moduleId} \n` +
         "CodeEngine plugin modules must export a function.");
+    }
+  });
+
+  it("should re-throw an error from the factory function", async () => {
+    let module = await createModule(
+      async function badFactory (data) {
+        throw new RangeError(data);
+      },
+      "Boom!"
+    );
+
+    try {
+      await pool.importFileProcessor(module);
+      assert.fail("An error should have been thrown");
+    }
+    catch (error) {
+      expect(error).to.be.an.instanceOf(RangeError);
+      expect(error.message).to.equal(
+        `Error importing module: ${module.moduleId} \n` +
+        "Boom!");
     }
   });
 
