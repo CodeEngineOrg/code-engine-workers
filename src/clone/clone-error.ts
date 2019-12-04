@@ -1,5 +1,6 @@
 import { Cloneable } from "@code-engine/types";
-import { ErrorLike, ono, Ono } from "ono";
+import { typedOno } from "@code-engine/utils";
+import { ErrorLike, Ono } from "ono";
 
 /**
  * The data necessary to clone an `Error` object across the thread boundary.
@@ -36,25 +37,8 @@ export function createError(error: ErrorClone): Error {
     // It's not an ErrorClone, so just return it as-is
     return error;
   }
-  else if (error.name in builtInErrorTypes) {
-    // Convert the ErrorClone to the corresponding Error type
-    let errorType = builtInErrorTypes[error.name];
-    return errorType(error);
-  }
   else {
-    // Convert the ErrorClone to an Error instance
-    return ono(error);
+    // Convert the ErrorClone to the corresponding Error type
+    return typedOno(error);
   }
 }
-
-/**
- * Function that coerce an `ErrorClone` to one of the built-in JavaScript error types
- */
-const builtInErrorTypes = {
-  [EvalError.name]: ono.eval,
-  [RangeError.name]: ono.range,
-  [ReferenceError.name]: ono.reference,
-  [SyntaxError.name]: ono.syntax,
-  [TypeError.name]: ono.type,
-  [URIError.name]: ono.uri,
-};
