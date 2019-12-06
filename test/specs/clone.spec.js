@@ -380,7 +380,7 @@ async function testClone (data, mutate = () => undefined) {
   let processFile = await pool.importFileProcessor(await createModule(
     // eslint-disable-next-line no-new-func
     new Function("file", "context", `
-      context.logger.log("data", file.metadata);              // <--- Log the cloned data
+      context.log("data", file.metadata);                     // <--- Log the cloned data
       (${mutate.toString()})(file.metadata);                  // <--- Mutate the data
       return file;                                            // <--- Return the mutated data
     `)
@@ -390,8 +390,8 @@ async function testClone (data, mutate = () => undefined) {
   let result = await generator.next();
 
   // Get the un-mutated cloned data that was logged
-  sinon.assert.calledOnce(context.logger.log);
-  let cloned = context.logger.log.firstCall.args[1];
+  sinon.assert.calledOnce(context.log.info);
+  let cloned = context.log.info.firstCall.args[1];
 
   // Get the mutated cloned data that was returned
   let mutated = result.value.metadata;

@@ -41,7 +41,7 @@
   },
   "engineStrict": true,
   "devDependencies": {
-    "@code-engine/types": "0.0.6",
+    "@code-engine/types": "0.0.7",
     "@types/chai": "^4.2.6",
     "@types/mocha": "^5.2.7",
     "@types/node": "^12.12.14",
@@ -65,7 +65,7 @@
   },
   "dependencies": {
     "@code-engine/stringify": "0.0.1",
-    "@code-engine/utils": "0.0.11",
+    "@code-engine/utils": "0.0.12",
     "@code-engine/validate": "0.0.1",
     "ono": "^5.1.0",
     "resolve-from": "^5.0.0",

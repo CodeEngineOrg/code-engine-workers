@@ -121,7 +121,7 @@ describe("Executor.processFile()", () => {
     let json = JSON.parse(Buffer.from(result.value.contents).toString());
 
     expect(json).to.deep.equal({
-      keys: ["cwd", "dev", "debug", "fullBuild", "partialBuild", "changedFiles", "logger"],
+      keys: ["cwd", "dev", "debug", "fullBuild", "partialBuild", "changedFiles", "log"],
       cwd: "/users/jdoe/desktop",
       dev: true,
       debug: false,

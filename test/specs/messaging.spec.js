@@ -18,31 +18,39 @@ describe("WorkerPool messaging between threads", () => {
   it("should send log messages from worker threads to the main thread", async () => {
     context.debug = true;
 
-    let moduleId = await createModule((file, { logger }) => {
-      logger.log("This is a log message", { foo: "bar" });
-      logger.warn("This is a warning message", { answer: 42 });
-      logger.error("This is an error message", { today: new Date("2005-05-05T05:05:05.005Z") });
-      logger.debug("This is a debug message", { biz: "baz" });
+    let moduleId = await createModule((file, { log }) => {
+      log("This is a log message", { foo: "bar" });
+      log(new RangeError("This is an error"), { fizz: "buzz" });
+      log.info("This is an info message", { up: "down" });
+      log.warn("This is a warning message", { answer: 42 });
+      log.error("This is an error message", { today: new Date("2005-05-05T05:05:05.005Z") });
+      log.debug("This is a debug message", { biz: "baz" });
     });
 
     let processFile = await pool.importFileProcessor(moduleId);
     await processFile(createFile({ path: "file.txt" }), context).next();
 
-    // Each log method should have been called once
-    sinon.assert.calledOnce(context.logger.log);
-    expect(context.logger.log.firstCall.args[0]).to.equal("This is a log message");
-    expect(context.logger.log.firstCall.args[1]).to.deep.equal({ foo: "bar" });
+    sinon.assert.calledTwice(context.log.info);
+    expect(context.log.info.firstCall.args[0]).to.equal("This is a log message");
+    expect(context.log.info.firstCall.args[1]).to.deep.equal({ foo: "bar" });
 
-    sinon.assert.calledOnce(context.logger.warn);
-    expect(context.logger.warn.firstCall.args[0]).to.equal("This is a warning message");
-    expect(context.logger.warn.firstCall.args[1]).to.deep.equal({ answer: 42 });
+    expect(context.log.info.secondCall.args[0]).to.equal("This is an info message");
+    expect(context.log.info.secondCall.args[1]).to.deep.equal({ up: "down" });
 
-    sinon.assert.calledOnce(context.logger.error);
-    expect(context.logger.error.firstCall.args[0]).to.equal("This is an error message");
-    expect(context.logger.error.firstCall.args[1]).to.deep.equal({ today: new Date("2005-05-05T05:05:05.005Z") });
+    sinon.assert.calledOnce(context.log.warn);
+    expect(context.log.warn.firstCall.args[0]).to.equal("This is a warning message");
+    expect(context.log.warn.firstCall.args[1]).to.deep.equal({ answer: 42 });
+
+    sinon.assert.calledTwice(context.log.error);
+    expect(context.log.error.firstCall.args[0]).to.be.an.instanceOf(RangeError);
+    expect(context.log.error.firstCall.args[0]).to.have.property("message", "This is an error");
+    expect(context.log.error.firstCall.args[1]).to.deep.equal({ fizz: "buzz" });
+
+    expect(context.log.error.secondCall.args[0]).to.equal("This is an error message");
+    expect(context.log.error.secondCall.args[1]).to.deep.equal({ today: new Date("2005-05-05T05:05:05.005Z") });
 
     // Lots of debug messages get logged for various things, so we have to filter the calls
-    let debugLogs = context.logger.debug.getCalls().filter((call) => call.args[1].biz === "baz");
+    let debugLogs = context.log.debug.getCalls().filter((call) => call.args[1].biz === "baz");
     expect(debugLogs).to.have.lengthOf(1);
     expect(debugLogs[0].args[0]).to.equal("This is a debug message");
     expect(debugLogs[0].args[1]).to.deep.equal({ biz: "baz" });
@@ -51,8 +59,8 @@ describe("WorkerPool messaging between threads", () => {
   it("should not send debug log messages from worker threads to the main thread if context.debug is false", async () => {
     context.debug = false;
 
-    let moduleId = await createModule((file, { logger }) => {
-      logger.debug("This is a debug message", { biz: "baz" });
+    let moduleId = await createModule((file, { log }) => {
+      log.debug("This is a debug message", { biz: "baz" });
     });
 
     let processFile = await pool.importFileProcessor(moduleId);
@@ -60,7 +68,7 @@ describe("WorkerPool messaging between threads", () => {
 
     // Lots of debug messages get logged for various things.
     // But for the purposes of this test, we only care that the log message above was NOT logged.
-    let debugLogs = context.logger.debug.getCalls().filter((call) => call.args[1].biz === "baz");
+    let debugLogs = context.log.debug.getCalls().filter((call) => call.args[1].biz === "baz");
     expect(debugLogs).to.have.lengthOf(0);
   });
 

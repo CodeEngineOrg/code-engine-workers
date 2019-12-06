@@ -3,6 +3,7 @@ import { log } from "@code-engine/utils";
 import { ono } from "ono";
 import * as path from "path";
 import { cloneContext } from "../clone/clone-context";
+import { createError } from "../clone/clone-error";
 import { cloneFile } from "../clone/clone-file";
 import { ImportFileProcessorMessage, ImportModuleMessage } from "../messaging/messages";
 import { ImportFileProcessorReply } from "../messaging/replies";
@@ -23,7 +24,7 @@ export class Worker extends Messenger {
   public constructor(context: Context) {
     super(workerScript);
 
-    this._logger = context.logger;
+    this._logger = context.log;
     this._isTerminated = false;
     this._waitUntilOnline = awaitOnline(this);
 
@@ -70,7 +71,8 @@ export class Worker extends Messenger {
       // tslint:disable-next-line: switch-default
       switch (reply.type) {
         case "log":
-          log(context.logger, reply.level, reply.message, reply.data);
+          let message = typeof reply.message === "string" ? reply.message : createError(reply.message);
+          log(context.log, reply.level, message, reply.data);
           break;
 
         case "file":

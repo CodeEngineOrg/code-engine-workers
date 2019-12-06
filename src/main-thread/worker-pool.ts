@@ -30,6 +30,7 @@ export class WorkerPool extends EventEmitter {
     super();
     concurrency = validate.number.integer.positive(concurrency, "concurrency", os.cpus().length);
     validate.type.object(context, "context");
+    validate.type.function(context.log, "context.log");
     this._cwd = validate.string.nonWhitespace(context.cwd, "context.cwd");
     this._createWorkers(concurrency, context);
   }
