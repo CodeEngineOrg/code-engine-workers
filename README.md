@@ -1,6 +1,16 @@
 CodeEngine workers
 ======================================
 
+[![Cross-Platform Compatibility](https://engine.codes/img/badges/os-badges.svg)](https://travis-ci.com/CodeEngineOrg/code-engine-workers)
+[![Build Status](https://api.travis-ci.com/CodeEngineOrg/code-engine-workers.svg?branch=master)](https://travis-ci.com/CodeEngineOrg/code-engine-workers)
+
+[![Coverage Status](https://coveralls.io/repos/github/CodeEngineOrg/code-engine-workers/badge.svg?branch=master)](https://coveralls.io/github/CodeEngineOrg/code-engine-workers)
+[![Dependencies](https://david-dm.org/CodeEngineOrg/code-engine-workers.svg)](https://david-dm.org/CodeEngineOrg/code-engine-workers)
+
+[![npm](https://img.shields.io/npm/v/@code-engine/workers.svg)](https://www.npmjs.com/package/@code-engine/workers)
+[![License](https://img.shields.io/npm/l/@code-engine/workers.svg)](LICENSE)
+
+
 
 This library is used inside [CodeEngine](https://engine.codes/) to provide multi-threaded concurrency. It exports a `WorkerPool` class, which manages worker threads and uses them to process files.
 
