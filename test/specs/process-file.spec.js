@@ -280,7 +280,7 @@ describe("Executor.processFile()", () => {
     }
     catch (error) {
       expect(error).to.be.an.instanceOf(TypeError);
-      expect(error.message).to.equal("Cannot perform Construct on a neutered ArrayBuffer");
+      expect(error.message).to.match(/^Cannot perform Construct on a (neutered|detached) ArrayBuffer$/);
     }
   });
 
