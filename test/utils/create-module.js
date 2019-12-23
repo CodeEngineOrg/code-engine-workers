@@ -2,6 +2,7 @@
 
 const tmp = require("tmp");
 const { promises: fs } = require("fs");
+const { join } = require("path");
 
 // Gracefully cleanup temp files
 tmp.setGracefulCleanup();
@@ -18,13 +19,13 @@ module.exports = createModule;
 async function createModule (code, data) {
   // Create a temp file
   let moduleId = await new Promise((resolve, reject) =>
-    tmp.file({ prefix: "code-engine-", postfix: ".js" }, (e, p) => e ? reject(e) : resolve(p)));
+    tmp.dir({ prefix: "code-engine-" }, (e, p) => e ? reject(e) : resolve(p)));
 
   if (typeof code !== "string") {
     code = `"use strict";\nmodule.exports = ${code};`;
   }
 
-  await fs.writeFile(moduleId, code);
+  await fs.writeFile(join(moduleId, "index.js"), code);
 
   if (data === undefined) {
     return moduleId;
