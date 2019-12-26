@@ -1,4 +1,4 @@
-import { BuildContext, Context, EventName, File, FileInfo, Logger } from "@code-engine/types";
+import { BuildContext, EventName, File, FileInfo, Logger } from "@code-engine/types";
 import { log } from "@code-engine/utils";
 import { ono } from "ono";
 import * as path from "path";
@@ -21,10 +21,10 @@ export class Worker extends Messenger {
   private _isTerminated: boolean;
   private _waitUntilOnline: Promise<void>;
 
-  public constructor(context: Context) {
+  public constructor(logger: Logger) {
     super(workerScript);
 
-    this._logger = context.log;
+    this._logger = logger;
     this._isTerminated = false;
     this._waitUntilOnline = awaitOnline(this);
 

@@ -1,16 +1,18 @@
-import { BuildContext, Context, EventName, File, FileProcessor, ModuleDefinition } from "@code-engine/types";
+import { BuildContext, EventName, File, FileProcessor, ModuleDefinition } from "@code-engine/types";
+import { createLogEmitter } from "@code-engine/utils";
 import { validate } from "@code-engine/validate";
 import { EventEmitter } from "events";
 import { ono } from "ono";
 import * as os from "os";
 import { ImportFileProcessorMessage, ImportModuleMessage } from "../messaging/messages";
+import { WorkerPoolConfig } from "./config";
 import { Worker } from "./worker";
 
 
 /**
  * Runs CodeEngine plugins on worker threads.
  */
-export class WorkerPool extends EventEmitter {
+export class WorkerPool {
   /** @internal */
   private _workers: Worker[] = [];
 
@@ -26,13 +28,19 @@ export class WorkerPool extends EventEmitter {
   /** @internal */
   private _cwd: string;
 
-  public constructor(concurrency: number, context: Context) {
-    super();
-    concurrency = validate.number.integer.positive(concurrency, "concurrency", os.cpus().length);
-    validate.type.object(context, "context");
-    validate.type.function(context.log, "context.log");
-    this._cwd = validate.string.nonWhitespace(context.cwd, "context.cwd");
-    this._createWorkers(concurrency, context);
+  public constructor(config: WorkerPoolConfig = {}) {
+    this._cwd = validate.string.nonWhitespace(config.cwd, "cwd", process.cwd());
+    let concurrency = validate.number.integer.positive(config.concurrency, "concurrency", os.cpus().length);
+    let emitter = config.emitter || new EventEmitter();
+    let log = config.log || createLogEmitter(emitter, config.debug || false);
+
+    let emitError = (error: Error) => emitter.emit(EventName.Error, error);
+
+    for (let i = 0; i < concurrency; i++) {
+      let worker = new Worker(log);
+      worker.on("error", emitError);
+      this._workers.push(worker);
+    }
   }
 
   /**
@@ -108,22 +116,6 @@ export class WorkerPool extends EventEmitter {
     let workers = this._workers;
     this._workers = [];
     await Promise.all(workers.map((worker) => worker.terminate()));
-  }
-
-
-  /**
-   * Creates the specified number of worker threads.
-   * @internal
-   */
-  private _createWorkers(concurrency: number, context: Context) {
-    // Re-emit all errros from workers
-    let emitError = (error: Error) => this.emit(EventName.Error, error);
-
-    for (let i = 0; i < concurrency; i++) {
-      let worker = new Worker(context);
-      worker.on("error", emitError);
-      this._workers.push(worker);
-    }
   }
 
   /**
