@@ -2,14 +2,22 @@
 
 const { WorkerPool: WorkerPoolClass } = require("../../");
 const { createFile } = require("@code-engine/utils");
+const { EventEmitter } = require("events");
 const { assert, expect } = require("chai");
 const WorkerPool = require("../utils/worker-pool");
 const createModule = require("../utils/create-module");
 const createContext = require("../utils/create-context");
+const createLogger = require("../utils/create-logger");
 const sinon = require("sinon");
 const os = require("os");
 
 describe("WorkerPool class", () => {
+
+  it("can be called without any arguments", async () => {
+    let pool = new WorkerPoolClass();
+    expect(pool).to.be.an("object").and.instanceOf(WorkerPoolClass);
+    pool.dispose();
+  });
 
   it('should not work without the "new" keyword', () => {
     function withoutNew () {
@@ -21,57 +29,106 @@ describe("WorkerPool class", () => {
     expect(withoutNew).to.throw("Class constructor WorkerPool cannot be invoked without 'new'");
   });
 
-  it("should throw an error if called without any arguments", async () => {
-    function noArgs () {
-      return new WorkerPoolClass();
+  it("should throw an error if called with an invalid CWD", async () => {
+    function badCWD () {
+      WorkerPool.create({ cwd: "\n" });
     }
 
-    expect(noArgs).to.throw(Error);
-    expect(noArgs).to.throw("Invalid context: undefined. A value is required.");
+    expect(badCWD).to.throw(Error);
+    expect(badCWD).to.throw('Invalid cwd: "\n". It cannot be all whitespace.');
   });
 
-  it("should throw an error if called without a context object", async () => {
-    function noContext () {
-      return new WorkerPoolClass(4);
-    }
+  describe("emitter", () => {
+    it("should use the specified EventEmitter", async () => {
+      let emitter = new EventEmitter();
+      let pool = WorkerPool.create({ emitter, debug: true });
 
-    expect(noContext).to.throw(Error);
-    expect(noContext).to.throw("Invalid context: undefined. A value is required.");
-  });
+      let onLog = sinon.spy();
+      emitter.on("log", onLog);
 
-  it("should emit an error event if a worker crashes", async () => {
-    let pool = WorkerPool.create();
-    let onError = sinon.spy(() => pool.dispose());
-    pool.on("error", onError);
+      // Wait a sec for the worker threads to come online
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    let moduleId = await createModule(async () => {
-      // Wait a sec
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      // Then crash the worker thread
-      process.exit(27);
+      // A debug message should have been logged for each worker
+      sinon.assert.callCount(onLog, pool.size);
+      sinon.assert.alwaysCalledWithExactly(onLog, sinon.match({
+        level: "debug",
+        message: sinon.match(/^CodeEngine worker #\d+ is online$/)
+      }));
     });
 
-    let processFile = await pool.importFileProcessor(moduleId);
-    let context = createContext();
+    it("should emit an error event if a worker crashes", async () => {
+      let emitter = new EventEmitter();
+      let pool = WorkerPool.create({ emitter });
+      let onError = sinon.spy(() => pool.dispose());
+      emitter.on("error", onError);
 
-    try {
+      let moduleId = await createModule(async () => {
+        // Wait a sec
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        // Then crash the worker thread
+        process.exit(27);
+      });
+
+      let processFile = await pool.importFileProcessor(moduleId);
+      let context = createContext();
+
+      try {
+        await processFile(createFile({ path: "file.txt" }), context).next();
+        assert.fail("An error should have been thrown");
+      }
+      catch (error) {
+        // The WorkerPool.on("error") event fired as soon as the worker crashed
+        sinon.assert.calledOnce(onError);
+        expect(onError.firstCall.args).to.have.lengthOf(1);
+        expect(onError.firstCall.args[0]).to.be.an.instanceOf(Error);
+        expect(onError.firstCall.args[0].message).to.match(/^CodeEngine worker \#-?\d unexpectedly exited with code 27\.$/);
+        expect(onError.firstCall.args[0].workerId).to.be.a("number");
+
+        // In our error handler (Sinon spy above) we called WokerPool.dispose(),
+        // which rejects our pending processFile() operation with this error:
+        expect(error).to.be.an.instanceOf(Error);
+        expect(error.message).to.equal("CodeEngine is terminating.");
+      }
+    });
+  });
+
+  describe("log", () => {
+    it("should log to the specified EventEmitter by default", async () => {
+      let emitter = new EventEmitter();
+      let pool = WorkerPool.create({ emitter, debug: true });
+
+      let onLog = sinon.spy();
+      emitter.on("log", onLog);
+
+      // Wait a sec for the worker threads to come online
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // A debug message should have been logged for each worker
+      sinon.assert.callCount(onLog, pool.size);
+      sinon.assert.alwaysCalledWithExactly(onLog, sinon.match({
+        level: "debug",
+        message: sinon.match(/^CodeEngine worker #\d+ is online$/)
+      }));
+    });
+
+    it("should log to the specified Logger", async () => {
+      let log = createLogger();
+      let pool = WorkerPool.create({ log });
+
+      let moduleId = await createModule((file, context) => {
+        context.log("This is a log message");
+        return file;
+      });
+
+      let processFile = await pool.importFileProcessor(moduleId);
+      let context = createContext({ log });
       await processFile(createFile({ path: "file.txt" }), context).next();
-      assert.fail("An error should have been thrown");
-    }
-    catch (error) {
-      // The WorkerPool.on("error") event fired as soon as the worker crashed
-      sinon.assert.calledOnce(onError);
-      expect(onError.firstCall.args).to.have.lengthOf(1);
-      expect(onError.firstCall.args[0]).to.be.an.instanceOf(Error);
-      expect(onError.firstCall.args[0].message).to.match(/^CodeEngine worker \#-?\d unexpectedly exited with code 27\.$/);
-      expect(onError.firstCall.args[0].workerId).to.be.a("number");
 
-      // In our error handler (Sinon spy above) we called WokerPool.dispose(),
-      // which rejects our pending processFile() operation with this error:
-      expect(error).to.be.an.instanceOf(Error);
-      expect(error.message).to.equal("CodeEngine is terminating.");
-    }
+      sinon.assert.callCount(log.info, 1);
+      sinon.assert.calledWithExactly(log.info, "This is a log message", undefined);
+    });
   });
 
   describe("concurrency", () => {
@@ -81,19 +138,19 @@ describe("WorkerPool class", () => {
     });
 
     it("should create one worker", async () => {
-      let pool = WorkerPool.create(1);
+      let pool = WorkerPool.create({ concurrency: 1 });
       expect(pool.size).to.equal(1);
     });
 
     it("should create more workers than CPUs", async () => {
       let size = os.cpus().length * 3;
-      let pool = WorkerPool.create(size);
+      let pool = WorkerPool.create({ concurrency: size });
       expect(pool.size).to.equal(size);
     });
 
     it("should throw an error if concurrency is zero", async () => {
       function zero () {
-        WorkerPool.create(0);
+        WorkerPool.create({ concurrency: 0 });
       }
 
       expect(zero).to.throw(RangeError);
@@ -102,7 +159,7 @@ describe("WorkerPool class", () => {
 
     it("should throw an error if concurrency is negative", async () => {
       function negative () {
-        WorkerPool.create(-1);
+        WorkerPool.create({ concurrency: -1 });
       }
 
       expect(negative).to.throw(RangeError);
@@ -111,7 +168,7 @@ describe("WorkerPool class", () => {
 
     it("should throw an error if concurrency is infinite", async () => {
       function infinite () {
-        WorkerPool.create(Infinity);
+        WorkerPool.create({ concurrency: Infinity });
       }
 
       expect(infinite).to.throw(TypeError);
@@ -120,7 +177,7 @@ describe("WorkerPool class", () => {
 
     it("should throw an error if concurrency is not a whole number", async () => {
       function infinite () {
-        WorkerPool.create(5.7);
+        WorkerPool.create({ concurrency: 5.7 });
       }
 
       expect(infinite).to.throw(TypeError);
@@ -129,7 +186,7 @@ describe("WorkerPool class", () => {
 
     it("should throw an error if concurrency is invalid", async () => {
       function infinite () {
-        WorkerPool.create("a bunch");
+        WorkerPool.create({ concurrency: "a bunch" });
       }
 
       expect(infinite).to.throw(TypeError);
