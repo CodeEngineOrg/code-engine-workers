@@ -25,11 +25,11 @@ This class creates worker threads, manages their lifecycle, and transfers CodeEn
 ```javascript
 import WorkerPool from "@code-engine/workers";
 
-// Create a new WorkerPool instance with 4 workers
-let pool = new WorkerPool(4, context);
+// Create a new WorkerPool instance
+let pool = new WorkerPool();
 
 try {
-  // Import a FileProcessor plugin in all 4 workers
+  // Import a FileProcessor plugin in all workers
   let processFile = await pool.importFileProcessor("./my-file-processor.js");
 
   // Process a file on one of the workers
@@ -43,16 +43,27 @@ finally {
 
 
 ### `WorkerPool` constructor
+The constructor accepts a [`WorkerPoolConfig` object](src/main-thread/config.ts) with the following properties.  All properties are optional.
 
-- **concurrency:** The number of worker threads to create
-
-- **context:** A CodeEngine [`Context` object](https://github.com/CodeEngineOrg/code-engine-types#types).
+|Config option |Type      |Default         |Description
+|--------------|----------|----------------|-------------------------------------------------------------------------
+|`cwd`         |string    |`process.cwd()` |The directory used to resolve all relative paths.
+|`concurrency` |number    |The number of CPU cores |The number of worker threads to create.
+|`debug`       |boolean   |false           |Indicates whether CodeEngine is running in debug mode, which enables additional logging and error stack traces.
+|`emitter`     |[EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter)|An internal EventEmitter|The [`EventEmitter` object](https://nodejs.org/api/events.html#events_class_eventemitter) that the `WorkerPool` will use to emit its events.
+|`log`         |[Logger](https://github.com/CodeEngineOrg/code-engine-types/blob/master/src/logger.d.ts) |Emit logs via `emitter`|The [`Logger`](https://github.com/CodeEngineOrg/code-engine-types/blob/master/src/logger.d.ts) to log messages and errors from worker threads.
 
 ```javascript
 import WorkerPool from "@code-engine/workers";
 
-// Create a new WorkerPool instance with 4 workers
-let pool = new WorkerPool(4, context);
+// Create a new WorkerPool instance with default config
+let pool = new WorkerPool();
+
+// Create a new WorkerPool instance with custom config
+let pool = new WorkerPool({
+  concurrency: 4,
+  debug: true,
+});
 ```
 
 
@@ -62,7 +73,7 @@ Read-only property that returns the number of worker threads in the pool. After 
 ```javascript
 import WorkerPool from "@code-engine/workers";
 
-let pool = new WorkerPool(4, context);
+let pool = new WorkerPool({ concurrency: 4 });
 console.log(pool.size);   // 4
 
 await pool.dispose();
@@ -76,7 +87,7 @@ Indicates whether the [`dispose()` method](#workerpooldispose) has been called. 
 ```javascript
 import WorkerPool from "@code-engine/workers";
 
-let pool = new WorkerPool(4, context);
+let pool = new WorkerPool();
 console.log(engine.isDisposed);     // false
 
 await engine.dispose();
@@ -91,9 +102,9 @@ Imports a CodeEngine [`FileProcessor` plugin](https://github.com/CodeEngineOrg/c
 
 ```javascript
 import WorkerPool from "@code-engine/workers";
-let pool = new WorkerPool(4, context);
+let pool = new WorkerPool();
 
-// Import a FileProcessor plugin in all 4 workers
+// Import a FileProcessor plugin in all workers
 let processFile = await pool.importFileProcessor("./my-file-processor.js");
 
 // Process a file on one of the workers
@@ -108,7 +119,7 @@ Imports a JavaScript module in all worker threads. The module export (if any) is
 
 ```javascript
 import WorkerPool from "@code-engine/workers";
-let pool = new WorkerPool(4, context);
+let pool = new WorkerPool();
 
 // Import a polyfill module in all worker threads
 await pool.importModule("@babel/polyfill");
@@ -121,7 +132,7 @@ Terminates the worker threads and releases all system resources that are held by
 ```javascript
 import WorkerPool from "@code-engine/workers";
 
-let pool = new WorkerPool(4, context);
+let pool = new WorkerPool();
 await pool.dispose();
 ```
 
