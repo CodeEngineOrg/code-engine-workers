@@ -2,6 +2,7 @@
 
 const WorkerPool = require("../utils/worker-pool");
 const createModule = require("../utils/create-module");
+const createLogger = require("../utils/create-logger");
 const createContext = require("../utils/create-context");
 const { createFile } = require("@code-engine/utils");
 const { assert, expect } = require("chai");
@@ -11,8 +12,9 @@ describe("WorkerPool messaging between threads", () => {
   let context, pool;
 
   beforeEach("create a new WorkerPool and Context", () => {
-    context = createContext();
-    pool = WorkerPool.create(undefined, context);
+    let log = createLogger();
+    context = createContext({ log });
+    pool = WorkerPool.create({ log });
   });
 
   it("should send log messages from worker threads to the main thread", async () => {

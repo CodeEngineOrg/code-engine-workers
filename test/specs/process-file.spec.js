@@ -2,6 +2,7 @@
 
 const WorkerPool = require("../utils/worker-pool");
 const createModule = require("../utils/create-module");
+const createLogger = require("../utils/create-logger");
 const createContext = require("../utils/create-context");
 const { createFile, createChangedFile } = require("@code-engine/utils");
 const { assert, expect } = require("chai");
@@ -10,8 +11,9 @@ describe("Executor.processFile()", () => {
   let context, pool;
 
   beforeEach("create a new WorkerPool and Context", () => {
-    context = createContext();
-    pool = WorkerPool.create(undefined, context);
+    let log = createLogger();
+    context = createContext({ log });
+    pool = WorkerPool.create({ log });
   });
 
   it("should support FileProcessors that return nothing", async () => {
