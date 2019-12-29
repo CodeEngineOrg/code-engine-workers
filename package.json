@@ -44,7 +44,7 @@
     "@code-engine/types": "0.0.10",
     "@types/chai": "^4.2.7",
     "@types/mocha": "^5.2.7",
-    "@types/node": "^13.1.0",
+    "@types/node": "^13.1.1",
     "@types/sinon": "^7.5.1",
     "chai": "^4.2.0",
     "coveralls": "^3.0.9",
@@ -61,13 +61,13 @@
     "tslint-modular": "^1.4.1",
     "typescript": "^3.7.4",
     "typescript-tslint-plugin": "^0.5.5",
-    "version-bump-prompt": "^5.0.6"
+    "version-bump-prompt": "^5.0.7"
   },
   "dependencies": {
     "@code-engine/stringify": "^1.0.0",
     "@code-engine/utils": "0.0.17",
     "@code-engine/validate": "^1.0.0",
-    "ono": "^5.1.0",
+    "ono": "^6.0.0",
     "resolve-from": "^5.0.0",
     "resolve-global": "^1.0.0"
   }
