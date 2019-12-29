@@ -26,7 +26,7 @@ This class creates worker threads, manages their lifecycle, and transfers CodeEn
 import WorkerPool from "@code-engine/workers";
 
 // Create a new WorkerPool instance
-let pool = new WorkerPool();
+let pool = new WorkerPool(emitter, context);
 
 try {
   // Import a FileProcessor plugin in all workers
@@ -43,27 +43,22 @@ finally {
 
 
 ### `WorkerPool` constructor
-The constructor accepts a [`WorkerPoolConfig` object](src/main-thread/config.ts) with the following properties.  All properties are optional.
-
-|Config option |Type      |Default         |Description
-|--------------|----------|----------------|-------------------------------------------------------------------------
-|`cwd`         |string    |`process.cwd()` |The directory used to resolve all relative paths.
-|`concurrency` |number    |The number of CPU cores |The number of worker threads to create.
-|`debug`       |boolean   |false           |Indicates whether CodeEngine is running in debug mode, which enables additional logging and error stack traces.
-|`emitter`     |[EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter)|An internal EventEmitter|The [`EventEmitter` object](https://nodejs.org/api/events.html#events_class_eventemitter) that the `WorkerPool` will use to emit its events.
-|`log`         |[Logger](https://github.com/CodeEngineOrg/code-engine-types/blob/master/src/logger.d.ts) |Emit logs via `emitter`|The [`Logger`](https://github.com/CodeEngineOrg/code-engine-types/blob/master/src/logger.d.ts) to log messages and errors from worker threads.
+The constructor accepts an [`EventEmitter`](https://nodejs.org/api/events.html#events_class_eventemitter) and a CodeEngine [`Context` object](https://github.com/CodeEngineOrg/code-engine-types/blob/master/src/context.d.ts). Both are required.
 
 ```javascript
 import WorkerPool from "@code-engine/workers";
+import { EventEmitter } from "events";
 
-// Create a new WorkerPool instance with default config
-let pool = new WorkerPool();
+let emitter = new EventEmitter();
 
-// Create a new WorkerPool instance with custom config
-let pool = new WorkerPool({
+let context = {
+  cwd: process.cwd(),
   concurrency: 4,
   debug: true,
-});
+  dev: false,
+};
+
+let pool = new WorkerPool(emitter, context);
 ```
 
 
@@ -73,7 +68,12 @@ Read-only property that returns the number of worker threads in the pool. After 
 ```javascript
 import WorkerPool from "@code-engine/workers";
 
-let pool = new WorkerPool({ concurrency: 4 });
+let context = {
+  concurrency: 4,
+  ...
+};
+
+let pool = new WorkerPool(emitter, context);
 console.log(pool.size);   // 4
 
 await pool.dispose();
@@ -87,7 +87,7 @@ Indicates whether the [`dispose()` method](#workerpooldispose) has been called. 
 ```javascript
 import WorkerPool from "@code-engine/workers";
 
-let pool = new WorkerPool();
+let pool = new WorkerPool(emitter, context);
 console.log(engine.isDisposed);     // false
 
 await engine.dispose();
@@ -102,7 +102,7 @@ Imports a CodeEngine [`FileProcessor` plugin](https://github.com/CodeEngineOrg/c
 
 ```javascript
 import WorkerPool from "@code-engine/workers";
-let pool = new WorkerPool();
+let pool = new WorkerPool(emitter, context);
 
 // Import a FileProcessor plugin in all workers
 let processFile = await pool.importFileProcessor("./my-file-processor.js");
@@ -119,7 +119,7 @@ Imports a JavaScript module in all worker threads. The module export (if any) is
 
 ```javascript
 import WorkerPool from "@code-engine/workers";
-let pool = new WorkerPool();
+let pool = new WorkerPool(emitter, context);
 
 // Import a polyfill module in all worker threads
 await pool.importModule("@babel/polyfill");
@@ -132,7 +132,7 @@ Terminates the worker threads and releases all system resources that are held by
 ```javascript
 import WorkerPool from "@code-engine/workers";
 
-let pool = new WorkerPool();
+let pool = new WorkerPool(emitter, context);
 await pool.dispose();
 ```
 
@@ -144,7 +144,7 @@ This event is fired whenever an unhandled error occurs in any of the worker thre
 
 ```javascript
 import WorkerPool from "@code-engine/workers";
-let pool = new WorkerPool();
+let pool = new WorkerPool(emitter, context);
 
 pool.on("error", (error) => {
   console.error("An unhandled error occurred:", error);
