@@ -2,8 +2,8 @@
 
 const WorkerPool = require("../utils/worker-pool");
 const createModule = require("../utils/create-module");
-const createLogger = require("../utils/create-logger");
 const createContext = require("../utils/create-context");
+const createEventEmitter = require("../utils/create-event-emitter");
 const { createFile } = require("@code-engine/utils");
 const { assert, expect } = require("chai");
 
@@ -11,9 +11,9 @@ describe("WorkerPool.importModule()", () => {
   let context, pool;
 
   beforeEach("create a new WorkerPool and Context", () => {
-    let log = createLogger();
-    context = createContext({ log });
-    pool = WorkerPool.create({ log });
+    let emitter = createEventEmitter();
+    context = createContext();
+    pool = WorkerPool.create(emitter, context);
   });
 
   it("should import a module that doesn't export anything", async () => {

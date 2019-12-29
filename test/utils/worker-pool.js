@@ -10,8 +10,8 @@ module.exports = {
   /**
    * Creates a new WorkerPool instance
    */
-  create (config) {
-    let pool = new WorkerPool(config);
+  create (emitter, context) {
+    let pool = new WorkerPool(emitter, context);
     instances.push(pool);
     return pool;
   },

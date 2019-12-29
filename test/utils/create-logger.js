@@ -4,6 +4,9 @@ const sinon = require("sinon");
 
 module.exports = createLogger;
 
+/**
+ * Creates a mock CodeEngine Logger
+ */
 function createLogger () {
   function log (msg, data) {
     if (typeof msg === "string") {

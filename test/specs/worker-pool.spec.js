@@ -2,22 +2,15 @@
 
 const { WorkerPool: WorkerPoolClass } = require("../../");
 const { createFile } = require("@code-engine/utils");
-const { EventEmitter } = require("events");
 const { assert, expect } = require("chai");
 const WorkerPool = require("../utils/worker-pool");
 const createModule = require("../utils/create-module");
 const createContext = require("../utils/create-context");
-const createLogger = require("../utils/create-logger");
+const createEventEmitter = require("../utils/create-event-emitter");
 const sinon = require("sinon");
 const os = require("os");
 
 describe("WorkerPool class", () => {
-
-  it("can be called without any arguments", async () => {
-    let pool = new WorkerPoolClass();
-    expect(pool).to.be.an("object").and.instanceOf(WorkerPoolClass);
-    pool.dispose();
-  });
 
   it('should not work without the "new" keyword', () => {
     function withoutNew () {
@@ -29,9 +22,20 @@ describe("WorkerPool class", () => {
     expect(withoutNew).to.throw("Class constructor WorkerPool cannot be invoked without 'new'");
   });
 
+  it("should throw an error if called without any arguments", async () => {
+    function noArgs () {
+      return new WorkerPoolClass();
+    }
+
+    expect(noArgs).to.throw(TypeError);
+    expect(noArgs).to.throw("Invalid EventEmitter: undefined. A value is required.");
+  });
+
   it("should throw an error if called with an invalid CWD", async () => {
     function badCWD () {
-      WorkerPool.create({ cwd: "\n" });
+      let emitter = createEventEmitter();
+      let context = createContext({ cwd: "\n" });
+      WorkerPool.create(emitter, context);
     }
 
     expect(badCWD).to.throw(Error);
@@ -39,118 +43,105 @@ describe("WorkerPool class", () => {
   });
 
   describe("emitter", () => {
-    it("should use the specified EventEmitter", async () => {
-      let emitter = new EventEmitter();
-      let pool = WorkerPool.create({ emitter, debug: true });
+    it("should emit an error event if a worker crashes", async () => {
+      let emitter = createEventEmitter();
+      let context = createContext();
+      let pool = WorkerPool.create(emitter, context);
 
-      let onLog = sinon.spy();
-      emitter.on("log", onLog);
+      let moduleId = await createModule(() => {
+        // Crash the worker thread after half a second
+        setTimeout(() => { throw new SyntaxError("Boom!"); }, 500);
+      });
 
-      // Wait a sec for the worker threads to come online
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Import the module into all worker threads.
+      // It will import successfully, and then crash the threads a half second later.
+      await pool.importModule(moduleId);
 
-      // A debug message should have been logged for each worker
-      sinon.assert.callCount(onLog, pool.size);
-      sinon.assert.alwaysCalledWithExactly(onLog, sinon.match({
-        level: "debug",
-        message: sinon.match(/^CodeEngine worker #\d+ is online$/)
-      }));
+      // Wait for the crash to occur
+      await new Promise((resolve) => setTimeout(resolve, 800));
+
+      // An "error" event should have beeen emitted
+      sinon.assert.called(emitter.emit);
+      sinon.assert.calledWithExactly(emitter.emit,
+        "error",
+        sinon.match({
+          name: "SyntaxError",
+          message: "Boom!"
+        }),
+        context,
+      );
     });
 
-    it("should emit an error event if a worker crashes", async () => {
-      let emitter = new EventEmitter();
-      let pool = WorkerPool.create({ emitter });
-      let onError = sinon.spy(() => pool.dispose());
-      emitter.on("error", onError);
+    it("should emit an error event if a worker exits unexpectedly", async () => {
+      let emitter = createEventEmitter();
+      let context = createContext();
+      let pool = WorkerPool.create(emitter, context);
 
       let moduleId = await createModule(async () => {
         // Wait a sec
         await new Promise((resolve) => setTimeout(resolve, 100));
 
-        // Then crash the worker thread
-        process.exit(27);
+        // Exit the worker thread
+        process.exit(0);
       });
 
       let processFile = await pool.importFileProcessor(moduleId);
-      let context = createContext();
 
       try {
         await processFile(createFile({ path: "file.txt" }), context).next();
         assert.fail("An error should have been thrown");
       }
       catch (error) {
-        // The WorkerPool.on("error") event fired as soon as the worker crashed
-        sinon.assert.calledOnce(onError);
-        expect(onError.firstCall.args).to.have.lengthOf(1);
-        expect(onError.firstCall.args[0]).to.be.an.instanceOf(Error);
-        expect(onError.firstCall.args[0].message).to.match(/^CodeEngine worker \#-?\d unexpectedly exited with code 27\.$/);
-        expect(onError.firstCall.args[0].workerId).to.be.a("number");
-
-        // In our error handler (Sinon spy above) we called WokerPool.dispose(),
-        // which rejects our pending processFile() operation with this error:
         expect(error).to.be.an.instanceOf(Error);
-        expect(error.message).to.equal("CodeEngine is terminating.");
+        expect(error.message).to.match(/^CodeEngine worker \#-?\d unexpectedly exited with code 0\.$/);
+
+        // The WorkerPool also emitted the original error
+        sinon.assert.calledOnce(emitter.emit);
+        sinon.assert.calledWithExactly(emitter.emit, "error", error, context);
       }
     });
   });
 
   describe("log", () => {
-    it("should log to the specified EventEmitter by default", async () => {
-      let emitter = new EventEmitter();
-      let pool = WorkerPool.create({ emitter, debug: true });
-
-      let onLog = sinon.spy();
-      emitter.on("log", onLog);
-
-      // Wait a sec for the worker threads to come online
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // A debug message should have been logged for each worker
-      sinon.assert.callCount(onLog, pool.size);
-      sinon.assert.alwaysCalledWithExactly(onLog, sinon.match({
-        level: "debug",
-        message: sinon.match(/^CodeEngine worker #\d+ is online$/)
-      }));
-    });
-
     it("should log to the specified Logger", async () => {
-      let log = createLogger();
-      let pool = WorkerPool.create({ log });
+      let emitter = createEventEmitter();
+      let context = createContext();
+      let pool = WorkerPool.create(emitter, context);
 
-      let moduleId = await createModule((file, context) => {
-        context.log("This is a log message");
+      let moduleId = await createModule((file, { log }) => {
+        log("This is a log message");
         return file;
       });
 
       let processFile = await pool.importFileProcessor(moduleId);
-      let context = createContext({ log });
       await processFile(createFile({ path: "file.txt" }), context).next();
 
-      sinon.assert.callCount(log.info, 1);
-      sinon.assert.calledWithExactly(log.info, "This is a log message", undefined);
+      sinon.assert.callCount(context.log.info, 1);
+      sinon.assert.calledWithExactly(context.log.info, "This is a log message", undefined);
     });
   });
 
   describe("concurrency", () => {
-    it("should create a worker per CPU by default", async () => {
-      let pool = WorkerPool.create();
-      expect(pool.size).to.equal(os.cpus().length);
-    });
-
     it("should create one worker", async () => {
-      let pool = WorkerPool.create({ concurrency: 1 });
+      let emitter = createEventEmitter();
+      let context = createContext({ concurrency: 1 });
+      let pool = WorkerPool.create(emitter, context);
       expect(pool.size).to.equal(1);
     });
 
     it("should create more workers than CPUs", async () => {
       let size = os.cpus().length * 3;
-      let pool = WorkerPool.create({ concurrency: size });
+      let emitter = createEventEmitter();
+      let context = createContext({ concurrency: size });
+      let pool = WorkerPool.create(emitter, context);
       expect(pool.size).to.equal(size);
     });
 
     it("should throw an error if concurrency is zero", async () => {
       function zero () {
-        WorkerPool.create({ concurrency: 0 });
+        let emitter = createEventEmitter();
+        let context = createContext({ concurrency: 0 });
+        return WorkerPool.create(emitter, context);
       }
 
       expect(zero).to.throw(RangeError);
@@ -159,7 +150,9 @@ describe("WorkerPool class", () => {
 
     it("should throw an error if concurrency is negative", async () => {
       function negative () {
-        WorkerPool.create({ concurrency: -1 });
+        let emitter = createEventEmitter();
+        let context = createContext({ concurrency: -1 });
+        return WorkerPool.create(emitter, context);
       }
 
       expect(negative).to.throw(RangeError);
@@ -168,7 +161,9 @@ describe("WorkerPool class", () => {
 
     it("should throw an error if concurrency is infinite", async () => {
       function infinite () {
-        WorkerPool.create({ concurrency: Infinity });
+        let emitter = createEventEmitter();
+        let context = createContext({ concurrency: Infinity });
+        return WorkerPool.create(emitter, context);
       }
 
       expect(infinite).to.throw(TypeError);
@@ -177,7 +172,9 @@ describe("WorkerPool class", () => {
 
     it("should throw an error if concurrency is not a whole number", async () => {
       function infinite () {
-        WorkerPool.create({ concurrency: 5.7 });
+        let emitter = createEventEmitter();
+        let context = createContext({ concurrency: 5.7 });
+        return WorkerPool.create(emitter, context);
       }
 
       expect(infinite).to.throw(TypeError);
@@ -186,7 +183,9 @@ describe("WorkerPool class", () => {
 
     it("should throw an error if concurrency is invalid", async () => {
       function infinite () {
-        WorkerPool.create({ concurrency: "a bunch" });
+        let emitter = createEventEmitter();
+        let context = createContext({ concurrency: "a bunch" });
+        return WorkerPool.create(emitter, context);
       }
 
       expect(infinite).to.throw(TypeError);
@@ -196,7 +195,9 @@ describe("WorkerPool class", () => {
 
   describe("dispose", () => {
     it("should ignore multiple dispose() calls", async () => {
-      let pool = WorkerPool.create();
+      let emitter = createEventEmitter();
+      let context = createContext();
+      let pool = WorkerPool.create(emitter, context);
       expect(pool.isDisposed).to.equal(false);
 
       await pool.dispose();
@@ -207,7 +208,9 @@ describe("WorkerPool class", () => {
     });
 
     it("should throw an error if used after dispose()", async () => {
-      let pool = WorkerPool.create();
+      let emitter = createEventEmitter();
+      let context = createContext();
+      let pool = WorkerPool.create(emitter, context);
       await pool.dispose();
 
       try {

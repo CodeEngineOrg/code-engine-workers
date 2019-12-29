@@ -4,6 +4,7 @@
 const WorkerPool = require("../utils/worker-pool");
 const createModule = require("../utils/create-module");
 const createContext = require("../utils/create-context");
+const createEventEmitter = require("../utils/create-event-emitter");
 const { createFile } = require("@code-engine/utils");
 const { expect } = require("chai");
 const sinon = require("sinon");
@@ -369,9 +370,9 @@ describe("Cloning data across the thread boundary", () => {
  * data with the mutated values.
  */
 async function testClone (data, mutate = () => undefined) {
-  let pool = WorkerPool.create({
-    concurrency: 1,
-  });
+  let emitter = createEventEmitter();
+  let context = createContext({ concurrency: 1 });
+  let pool = WorkerPool.create(emitter, context);
 
   let file = createFile({
     path: "file1.txt",
@@ -387,7 +388,6 @@ async function testClone (data, mutate = () => undefined) {
     `)
   ));
 
-  let context = createContext();
   let generator = processFile(file, context);
   let result = await generator.next();
 
