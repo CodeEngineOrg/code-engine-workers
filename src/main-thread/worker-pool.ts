@@ -1,6 +1,5 @@
-import { BuildContext, Context, EventName, File, FileProcessor, ModuleDefinition } from "@code-engine/types";
+import { BuildContext, CodeEngineEventEmitter, Context, EventName, File, FileProcessor, ModuleDefinition } from "@code-engine/types";
 import { validate } from "@code-engine/validate";
-import { EventEmitter } from "events";
 import { ono } from "ono";
 import { ImportFileProcessorMessage, ImportModuleMessage } from "../messaging/messages";
 import { Worker } from "./worker";
@@ -24,7 +23,7 @@ export class WorkerPool {
   /** @internal */
   private _cwd: string;
 
-  public constructor(emitter: EventEmitter, context: Context) {
+  public constructor(emitter: CodeEngineEventEmitter, context: Context) {
     validate.value(emitter, "EventEmitter");
     validate.type.function(emitter.emit, "EventEmitter");
     validate.type.object(context, "CodeEngine context");
