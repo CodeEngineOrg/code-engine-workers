@@ -1,13 +1,9 @@
-import { BuildContext, EventName, File, FileProcessor, ModuleDefinition } from "@code-engine/types";
-import { createLogEmitter } from "@code-engine/utils";
+import { BuildContext, Context, EventName, File, FileProcessor, ModuleDefinition } from "@code-engine/types";
 import { validate } from "@code-engine/validate";
 import { EventEmitter } from "events";
 import { ono } from "ono";
-import * as os from "os";
 import { ImportFileProcessorMessage, ImportModuleMessage } from "../messaging/messages";
-import { WorkerPoolConfig } from "./config";
 import { Worker } from "./worker";
-
 
 /**
  * Runs CodeEngine plugins on worker threads.
@@ -28,16 +24,18 @@ export class WorkerPool {
   /** @internal */
   private _cwd: string;
 
-  public constructor(config: WorkerPoolConfig = {}) {
-    this._cwd = validate.string.nonWhitespace(config.cwd, "cwd", process.cwd());
-    let concurrency = validate.number.integer.positive(config.concurrency, "concurrency", os.cpus().length);
-    let emitter = config.emitter || new EventEmitter();
-    let log = config.log || createLogEmitter(emitter, config.debug || false);
+  public constructor(emitter: EventEmitter, context: Context) {
+    validate.value(emitter, "EventEmitter");
+    validate.type.function(emitter.emit, "EventEmitter");
+    validate.type.object(context, "CodeEngine context");
 
-    let emitError = (error: Error) => emitter.emit(EventName.Error, error);
+    this._cwd = validate.string.nonWhitespace(context.cwd, "cwd");
+    let concurrency = validate.number.integer.positive(context.concurrency, "concurrency");
+
+    let emitError = (error: Error) => emitter.emit(EventName.Error, error, context);
 
     for (let i = 0; i < concurrency; i++) {
-      let worker = new Worker(log);
+      let worker = new Worker(context.log);
       worker.on("error", emitError);
       this._workers.push(worker);
     }
