@@ -1,6 +1,6 @@
 import { stringify } from "@code-engine/stringify";
 import { FactoryFunction, FileProcessor } from "@code-engine/types";
-import { createFile, importModule, iterate, normalizeFileInfo, typedOno } from "@code-engine/utils";
+import { createFile, importModule, iterate, normalizeFileInfo } from "@code-engine/utils";
 import { ono } from "ono";
 import { MessagePort } from "worker_threads";
 import { createContext } from "../clone/clone-context";
@@ -72,7 +72,7 @@ export class Executor extends Messenger {
       this.postReply({ to: message.id, type: "fileProcessorImported", name: fileProcessor.name });
     }
     catch (error) {
-      throw typedOno(error, { workerId: this.threadId, moduleId }, `Error importing module: ${moduleId}`);
+      throw ono(error, { workerId: this.threadId, moduleId }, `Error importing module: ${moduleId}`);
     }
   }
 
@@ -97,7 +97,7 @@ export class Executor extends Messenger {
       this.postReply({ to: message.id, type: "finished" });
     }
     catch (error) {
-      throw typedOno(error, { workerId: this.threadId, moduleId }, `Error importing module: ${moduleId}`);
+      throw ono(error, { workerId: this.threadId, moduleId }, `Error importing module: ${moduleId}`);
     }
   }
 

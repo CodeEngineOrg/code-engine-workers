@@ -1,6 +1,5 @@
 import { Cloneable } from "@code-engine/types";
-import { typedOno } from "@code-engine/utils";
-import { ErrorLike, Ono } from "ono";
+import { ErrorLike, Ono, ono } from "ono";
 
 /**
  * The data necessary to clone an `Error` object across the thread boundary.
@@ -39,6 +38,6 @@ export function createError(error: ErrorClone): Error {
   }
   else {
     // Convert the ErrorClone to the corresponding Error type
-    return typedOno(error);
+    return ono(error);
   }
 }
