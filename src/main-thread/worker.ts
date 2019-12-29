@@ -91,9 +91,7 @@ export class Worker extends Messenger {
     }
 
     this._isTerminated = true;
-    this.rejectAllPendingMessages(ono(`CodeEngine is terminating.`));
     let exitCode = await super.terminate();
-    this._debug(`CodeEngine worker #${this.threadId} has terminated`, { exitCode });
     return exitCode;
   }
 
@@ -108,11 +106,21 @@ export class Worker extends Messenger {
    * Handles the worker thread exiting, either because we told it to terminate, or because it crashed.
    */
   private _handleExit(exitCode: number) {
-    if (!this._isTerminated) {
-      // The worker crashed or exited unexpectedly
-      this.emit(EventName.Error, ono({ workerId: this.threadId },
-        `CodeEngine worker #${this.threadId} unexpectedly exited with code ${exitCode}.`));
+    let error;
+
+    if (this._isTerminated) {
+      // The worker was intentionally terminated
+      error = ono({ workerId: this.threadId }, "CodeEngine is terminating.");
     }
+    else {
+      // The worker crashed or exited unexpectedly
+      this._isTerminated = true;
+      error = ono({ workerId: this.threadId }, `CodeEngine worker #${this.threadId} unexpectedly exited with code ${exitCode}.`);
+      this.emit(EventName.Error, error);
+    }
+
+    this.rejectAllPendingMessages(error);
+    this._debug(`CodeEngine worker #${this.threadId} has terminated`, { exitCode });
   }
 
   /**
