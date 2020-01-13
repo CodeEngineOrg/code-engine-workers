@@ -1,4 +1,4 @@
-import { CodeEngine, EventName, File, FileProcessor, ModuleDefinition, Run } from "@code-engine/types";
+import { Cloneable, CodeEngine, EventName, File, FileProcessor, Run } from "@code-engine/types";
 import { validate } from "@code-engine/validate";
 import { ono } from "ono";
 import { ImportFileProcessorMessage, ImportModuleMessage } from "../messaging/messages";
@@ -60,9 +60,8 @@ export class WorkerPool {
    *
    * @returns - A proxy function that executes the processor in one of the threads.
    */
-  public async importFileProcessor(module: string | ModuleDefinition<FileProcessor>): Promise<FileProcessor> {
+  public async importFileProcessor(moduleId: string, data?: Cloneable): Promise<FileProcessor> {
     this._assertNotDisposed();
-    let { moduleId, data } = normalizeModule(module);
     let cwd = this._cwd;
     let moduleUID = ++this._moduleCounter;
     let message: ImportFileProcessorMessage = { type: "importFileProcessor", cwd, moduleUID, moduleId, data };
@@ -91,9 +90,8 @@ export class WorkerPool {
   /**
    * Imports the specified JavaScript module in all worker threads.
    */
-  public async importModule(module: string | ModuleDefinition<void>): Promise<void> {
+  public async importModule(moduleId: string, data?: Cloneable): Promise<void> {
     this._assertNotDisposed();
-    let { moduleId, data } = normalizeModule(module);
     let cwd = this._cwd;
     let message: ImportModuleMessage = { type: "importModule", cwd,  moduleId, data };
 
@@ -133,18 +131,5 @@ export class WorkerPool {
     if (this.isDisposed) {
       throw ono(`CodeEngine cannot be used after it has been disposed.`);
     }
-  }
-}
-
-
-/**
- * Normalizes a module definition.
- */
-function normalizeModule<T>(module: string | ModuleDefinition<T>): ModuleDefinition<T> {
-  if (typeof module === "string") {
-    return { moduleId: module };
-  }
-  else {
-    return module;
   }
 }
