@@ -3,8 +3,8 @@
 
 const WorkerPool = require("../utils/worker-pool");
 const createModule = require("../utils/create-module");
-const createContext = require("../utils/create-context");
-const createEventEmitter = require("../utils/create-event-emitter");
+const createRun = require("../utils/create-run");
+const createEngine = require("../utils/create-engine");
 const { createFile } = require("@code-engine/utils");
 const { expect } = require("chai");
 const sinon = require("sinon");
@@ -370,9 +370,9 @@ describe("Cloning data across the thread boundary", () => {
  * data with the mutated values.
  */
 async function testClone (data, mutate = () => undefined) {
-  let emitter = createEventEmitter();
-  let context = createContext({ concurrency: 1 });
-  let pool = WorkerPool.create(emitter, context);
+  let engine = createEngine({ concurrency: 1 });
+  let run = createRun(engine);
+  let pool = WorkerPool.create(engine);
 
   let file = createFile({
     path: "file1.txt",
@@ -381,19 +381,19 @@ async function testClone (data, mutate = () => undefined) {
 
   let processFile = await pool.importFileProcessor(await createModule(
     // eslint-disable-next-line no-new-func
-    new Function("file", "context", `
-      context.log("data", file.metadata);                     // <--- Log the cloned data
+    new Function("file", "run", `
+      run.log("data", file.metadata);                         // <--- Log the cloned data
       (${mutate.toString()})(file.metadata);                  // <--- Mutate the data
       return file;                                            // <--- Return the mutated data
     `)
   ));
 
-  let generator = processFile(file, context);
+  let generator = processFile(file, run);
   let result = await generator.next();
 
   // Get the un-mutated cloned data that was logged
-  sinon.assert.calledOnce(context.log.info);
-  let cloned = context.log.info.firstCall.args[1];
+  sinon.assert.calledOnce(run.log.info);
+  let cloned = run.log.info.firstCall.args[1];
 
   // Get the mutated cloned data that was returned
   let mutated = result.value.metadata;

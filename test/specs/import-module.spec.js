@@ -2,18 +2,18 @@
 
 const WorkerPool = require("../utils/worker-pool");
 const createModule = require("../utils/create-module");
-const createContext = require("../utils/create-context");
-const createEventEmitter = require("../utils/create-event-emitter");
+const createRun = require("../utils/create-run");
+const createEngine = require("../utils/create-engine");
 const { createFile } = require("@code-engine/utils");
 const { assert, expect } = require("chai");
 
 describe("WorkerPool.importModule()", () => {
-  let context, pool;
+  let run, pool;
 
-  beforeEach("create a new WorkerPool and Context", () => {
-    let emitter = createEventEmitter();
-    context = createContext();
-    pool = WorkerPool.create(emitter, context);
+  beforeEach("create a new WorkerPool and Run", () => {
+    let engine = createEngine();
+    run = createRun(engine);
+    pool = WorkerPool.create(engine);
   });
 
   it("should import a module that doesn't export anything", async () => {
@@ -26,7 +26,7 @@ describe("WorkerPool.importModule()", () => {
     await pool.importModule(moduleId);
     let processFile = await pool.importFileProcessor(processorId);
 
-    let generator = processFile(createFile({ path: "file.txt" }), context);
+    let generator = processFile(createFile({ path: "file.txt" }), run);
     let { value } = await generator.next();
     let file = createFile(value);
 
@@ -34,7 +34,7 @@ describe("WorkerPool.importModule()", () => {
   });
 
   it("should call the module's factory function, even with no data", async () => {
-    let module = await createModule(
+    let moduleId = await createModule(
       () => global.text = "This text came from the factory function"
     );
 
@@ -43,10 +43,10 @@ describe("WorkerPool.importModule()", () => {
       return file;
     });
 
-    await pool.importModule(module);
+    await pool.importModule(moduleId);
     let processFile = await pool.importFileProcessor(processorId);
 
-    let generator = processFile(createFile({ path: "file.txt" }), context);
+    let generator = processFile(createFile({ path: "file.txt" }), run);
     let { value } = await generator.next();
     let file = createFile(value);
 
@@ -54,20 +54,17 @@ describe("WorkerPool.importModule()", () => {
   });
 
   it("should call the module's factory function with data", async () => {
-    let module = await createModule(
-      (data) => global.text = data.text,
-      { text: "This text came from the data object" }
-    );
+    let moduleId = await createModule((data) => global.text = data.text);
 
     let processorId = await createModule((file) => {
       file.text = global.text;
       return file;
     });
 
-    await pool.importModule(module);
+    await pool.importModule(moduleId, { text: "This text came from the data object" });
     let processFile = await pool.importFileProcessor(processorId);
 
-    let generator = processFile(createFile({ path: "file.txt" }), context);
+    let generator = processFile(createFile({ path: "file.txt" }), run);
     let { value } = await generator.next();
     let file = createFile(value);
 
@@ -75,7 +72,7 @@ describe("WorkerPool.importModule()", () => {
   });
 
   it("should wait for an async factory function to complete", async () => {
-    let module = await createModule(
+    let moduleId = await createModule(
       async () => {
         await new Promise((resolve) => setTimeout(resolve, 300));
         global.text = "This text was set asynchronously";
@@ -87,10 +84,10 @@ describe("WorkerPool.importModule()", () => {
       return file;
     });
 
-    await pool.importModule(module);
+    await pool.importModule(moduleId);
     let processFile = await pool.importFileProcessor(processorId);
 
-    let generator = processFile(createFile({ path: "file.txt" }), context);
+    let generator = processFile(createFile({ path: "file.txt" }), run);
     let { value } = await generator.next();
     let file = createFile(value);
 

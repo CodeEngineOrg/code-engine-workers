@@ -2,24 +2,24 @@
 
 const WorkerPool = require("../utils/worker-pool");
 const createModule = require("../utils/create-module");
-const createContext = require("../utils/create-context");
-const createEventEmitter = require("../utils/create-event-emitter");
+const createRun = require("../utils/create-run");
+const createEngine = require("../utils/create-engine");
 const { createFile, createChangedFile } = require("@code-engine/utils");
 const { assert, expect } = require("chai");
 
 describe("Executor.processFile()", () => {
-  let context, pool;
+  let run, pool;
 
-  beforeEach("create a new WorkerPool and Context", () => {
-    let emitter = createEventEmitter();
-    context = createContext();
-    pool = WorkerPool.create(emitter, context);
+  beforeEach("create a new WorkerPool and Run", () => {
+    let engine = createEngine();
+    run = createRun(engine);
+    pool = WorkerPool.create(engine);
   });
 
   it("should support FileProcessors that return nothing", async () => {
     let moduleId = await createModule(() => undefined);
     let processFile = await pool.importFileProcessor(moduleId);
-    let generator = processFile(createFile({ path: "file.txt" }), context);
+    let generator = processFile(createFile({ path: "file.txt" }), run);
     let { done, value } = await generator.next();
 
     expect(done).to.equal(true);
@@ -29,7 +29,7 @@ describe("Executor.processFile()", () => {
   it("should support FileProcessors that return a single file", async () => {
     let moduleId = await createModule(() => ({ path: "file1.txt" }));
     let processFile = await pool.importFileProcessor(moduleId);
-    let generator = processFile(createFile({ path: "file.txt" }), context);
+    let generator = processFile(createFile({ path: "file.txt" }), run);
     let file1 = await generator.next();
 
     expect(file1.value).to.deep.equal({ path: "file1.txt" });
@@ -38,7 +38,7 @@ describe("Executor.processFile()", () => {
   it("should support FileProcessors that return an array of files", async () => {
     let moduleId = await createModule(() => [{ path: "file1.txt" }, { path: "file2.txt" }]);
     let processFile = await pool.importFileProcessor(moduleId);
-    let generator = processFile(createFile({ path: "file.txt" }), context);
+    let generator = processFile(createFile({ path: "file.txt" }), run);
 
     let file1 = await generator.next();
     expect(file1.value).to.deep.equal({ path: "file1.txt" });
@@ -53,7 +53,7 @@ describe("Executor.processFile()", () => {
       yield { path: "file2.txt" };
     });
     let processFile = await pool.importFileProcessor(moduleId);
-    let generator = processFile(createFile({ path: "file.txt" }), context);
+    let generator = processFile(createFile({ path: "file.txt" }), run);
 
     let file1 = await generator.next();
     expect(file1.value).to.deep.equal({ path: "file1.txt" });
@@ -69,7 +69,7 @@ describe("Executor.processFile()", () => {
       yield { path: "file2.txt" };
     });
     let processFile = await pool.importFileProcessor(moduleId);
-    let generator = processFile(createFile({ path: "file.txt" }), context);
+    let generator = processFile(createFile({ path: "file.txt" }), run);
 
     let file1 = await generator.next();
     expect(file1.value).to.deep.equal({ path: "file1.txt" });
@@ -78,7 +78,7 @@ describe("Executor.processFile()", () => {
     expect(file2.value).to.deep.equal({ path: "file2.txt" });
   });
 
-  it("should invoke the FileProcessor without a `this` context", async () => {
+  it("should invoke the FileProcessor without a `this` run", async () => {
     let moduleId = await createModule(function () {
       return {
         path: "file1.txt",
@@ -86,25 +86,25 @@ describe("Executor.processFile()", () => {
       };
     });
     let processFile = await pool.importFileProcessor(moduleId);
-    let generator = processFile(createFile({ path: "file.txt" }), context);
+    let generator = processFile(createFile({ path: "file.txt" }), run);
     let { value } = await generator.next();
     let file1 = createFile(value);
 
     expect(file1.text).to.equal("[object Undefined]");
   });
 
-  it("should send the build context across the thread boundary", async () => {
-    let moduleId = await createModule((file, buildContext) => {
+  it("should send the run across the thread boundary", async () => {
+    let moduleId = await createModule((file, ctx) => {
       return {
-        path: "context-info.json",
+        path: "run-info.json",
         text: JSON.stringify({
-          keys: Object.keys(buildContext),
-          cwd: buildContext.cwd,
-          dev: buildContext.dev,
-          debug: buildContext.debug,
-          fullBuild: buildContext.fullBuild,
-          partialBuild: buildContext.partialBuild,
-          changedFiles: buildContext.changedFiles,
+          keys: Object.keys(ctx),
+          cwd: ctx.cwd,
+          dev: ctx.dev,
+          debug: ctx.debug,
+          full: ctx.full,
+          partial: ctx.partial,
+          changedFiles: ctx.changedFiles,
         })
       };
     });
@@ -114,8 +114,8 @@ describe("Executor.processFile()", () => {
       cwd: "/users/jdoe/desktop",
       dev: true,
       debug: false,
-      fullBuild: true,
-      partialBuild: false,
+      full: true,
+      partial: false,
       changedFiles: [],
     });
 
@@ -123,25 +123,25 @@ describe("Executor.processFile()", () => {
     let json = JSON.parse(Buffer.from(result.value.contents).toString());
 
     expect(json).to.deep.equal({
-      keys: ["cwd", "dev", "debug", "fullBuild", "partialBuild", "changedFiles", "log"],
+      keys: ["cwd", "dev", "debug", "full", "partial", "changedFiles", "log"],
       cwd: "/users/jdoe/desktop",
       dev: true,
       debug: false,
-      fullBuild: true,
-      partialBuild: false,
+      full: true,
+      partial: false,
       changedFiles: [],
     });
   });
 
   it("should send the changed files across the thread boundary", async () => {
-    let moduleId = await createModule((file, buildContext) => {
+    let moduleId = await createModule((file, ctx) => {
       return {
         path: "changed-files.json",
-        text: JSON.stringify(buildContext.changedFiles)
+        text: JSON.stringify(ctx.changedFiles)
       };
     });
 
-    context.changedFiles = [
+    run.changedFiles = [
       createChangedFile({
         path: "new-file.txt",
         change: "created",
@@ -161,7 +161,7 @@ describe("Executor.processFile()", () => {
     ];
 
     let processFile = await pool.importFileProcessor(moduleId);
-    let generator = processFile(createFile({ path: "file.txt" }), context);
+    let generator = processFile(createFile({ path: "file.txt" }), run);
 
     let result = await generator.next();
     let json = JSON.parse(Buffer.from(result.value.contents).toString());
@@ -188,7 +188,7 @@ describe("Executor.processFile()", () => {
     ]);
   });
 
-  it("should invoke the FileProcessor without a `this` context", async () => {
+  it("should invoke the FileProcessor without a `this` run", async () => {
     let moduleId = await createModule(function () {
       return {
         path: "file1.txt",
@@ -196,7 +196,7 @@ describe("Executor.processFile()", () => {
       };
     });
     let processFile = await pool.importFileProcessor(moduleId);
-    let generator = processFile(createFile({ path: "file.txt" }), context);
+    let generator = processFile(createFile({ path: "file.txt" }), run);
     let { value } = await generator.next();
     let file1 = createFile(value);
 
@@ -222,7 +222,7 @@ describe("Executor.processFile()", () => {
     });
 
     let processFile = await pool.importFileProcessor(moduleId);
-    let generator = processFile(mainThreadFile, context);
+    let generator = processFile(mainThreadFile, run);
 
     let output = await generator.next();
     let outputFile = createFile(output.value);
@@ -258,7 +258,7 @@ describe("Executor.processFile()", () => {
     });
 
     let processFile = await pool.importFileProcessor(moduleId);
-    let generator = processFile(mainThreadFile, context);
+    let generator = processFile(mainThreadFile, run);
 
     let output = await generator.next();
     let outputFile = createFile(output.value);
@@ -289,7 +289,7 @@ describe("Executor.processFile()", () => {
   it("should throw an error if the FileProcessor returns an invalid value", async () => {
     let moduleId = await createModule(() => false);
     let processFile = await pool.importFileProcessor(moduleId);
-    let generator = processFile(createFile({ path: "file.txt" }), context);
+    let generator = processFile(createFile({ path: "file.txt" }), run);
 
     try {
       await generator.next();
@@ -304,7 +304,7 @@ describe("Executor.processFile()", () => {
   it("should throw an error if the FileProcessor returns an invalid value asynchronously", async () => {
     let moduleId = await createModule(() => Promise.resolve(12345));
     let processFile = await pool.importFileProcessor(moduleId);
-    let generator = processFile(createFile({ path: "file.txt" }), context);
+    let generator = processFile(createFile({ path: "file.txt" }), run);
 
     try {
       await generator.next();
@@ -322,7 +322,7 @@ describe("Executor.processFile()", () => {
       yield { foo: "file2.txt" };
     });
     let processFile = await pool.importFileProcessor(moduleId);
-    let generator = processFile(createFile({ path: "file.txt" }), context);
+    let generator = processFile(createFile({ path: "file.txt" }), run);
 
     let file1 = await generator.next();
     expect(file1.value).to.deep.equal({ path: "file1.txt" });

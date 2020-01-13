@@ -2,31 +2,31 @@
 
 const WorkerPool = require("../utils/worker-pool");
 const createModule = require("../utils/create-module");
-const createContext = require("../utils/create-context");
-const createEventEmitter = require("../utils/create-event-emitter");
+const createRun = require("../utils/create-run");
+const createEngine = require("../utils/create-engine");
 const { createFile } = require("@code-engine/utils");
 const { assert, expect } = require("chai");
 
 describe("WorkerPool.importFileProcessor()", () => {
-  let context, pool;
+  let run, pool;
 
-  beforeEach("create a new WorkerPool and Context", () => {
-    let emitter = createEventEmitter();
-    context = createContext();
-    pool = WorkerPool.create(emitter, context);
+  beforeEach("create a new WorkerPool and Run", () => {
+    let engine = createEngine();
+    run = createRun(engine);
+    pool = WorkerPool.create(engine);
   });
 
-  it("should import a module from a moduleId (string)", async () => {
+  it("should import a module without options", async () => {
     let moduleId = await createModule((file) => file);
     let processFile = await pool.importFileProcessor(moduleId);
     expect(moduleId).to.be.a("string");
     expect(processFile).to.be.a("function");
   });
 
-  it("should import a module from a module definition (object)", async () => {
-    let module = await createModule(() => (file) => file, { some: "data" });
-    let processFile = await pool.importFileProcessor(module);
-    expect(module).to.be.an("object");
+  it("should import a module with options", async () => {
+    let moduleId = await createModule(() => (file) => file);
+    let processFile = await pool.importFileProcessor(moduleId, { some: "data" });
+    expect(moduleId).to.be.a("string");
     expect(processFile).to.be.a("function");
   });
 
@@ -37,7 +37,7 @@ describe("WorkerPool.importFileProcessor()", () => {
     });
 
     let processFile = await pool.importFileProcessor(moduleId);
-    let generator = processFile(createFile({ path: "file.txt" }), context);
+    let generator = processFile(createFile({ path: "file.txt" }), run);
     let { value } = await generator.next();
     let file = createFile(value);
 
@@ -49,7 +49,7 @@ describe("WorkerPool.importFileProcessor()", () => {
       'exports.default = (file) => (file.text = "Hi, from ECMAScript!", file)');
 
     let processFile = await pool.importFileProcessor(moduleId);
-    let generator = processFile(createFile({ path: "file.txt" }), context);
+    let generator = processFile(createFile({ path: "file.txt" }), run);
     let { value } = await generator.next();
     let file = createFile(value);
 
@@ -60,10 +60,10 @@ describe("WorkerPool.importFileProcessor()", () => {
     let moduleId = await createModule((data) => (file) => {
       file.text = data;
       return file;
-    }, "CommonJS module with data");
+    });
 
-    let processFile = await pool.importFileProcessor(moduleId);
-    let generator = processFile(createFile({ path: "file.txt" }), context);
+    let processFile = await pool.importFileProcessor(moduleId, "CommonJS module with data");
+    let generator = processFile(createFile({ path: "file.txt" }), run);
     let { value } = await generator.next();
     let file = createFile(value);
 
@@ -71,12 +71,9 @@ describe("WorkerPool.importFileProcessor()", () => {
   });
 
   it("should import an ECMAScript module with data", async () => {
-    let module = await createModule(
-      "exports.default = (data) => (file) => (file.text = data, file)",
-      "ECMAScript module with data");
-
-    let processFile = await pool.importFileProcessor(module);
-    let generator = processFile(createFile({ path: "file.txt" }), context);
+    let moduleId = await createModule("exports.default = (data) => (file) => (file.text = data, file)");
+    let processFile = await pool.importFileProcessor(moduleId, "ECMAScript module with data");
+    let generator = processFile(createFile({ path: "file.txt" }), run);
     let { value } = await generator.next();
     let file = createFile(value);
 
@@ -94,7 +91,7 @@ describe("WorkerPool.importFileProcessor()", () => {
 
     let moduleId = await createModule(fileProcessor);
     let processFile = await pool.importFileProcessor(moduleId);
-    let generator = processFile(createFile({ path: "file.txt" }), context);
+    let generator = processFile(createFile({ path: "file.txt" }), run);
     let { value } = await generator.next();
     let file = createFile(value);
 
@@ -113,9 +110,9 @@ describe("WorkerPool.importFileProcessor()", () => {
       };
     }
 
-    let moduleId = await createModule(factory, 500);
-    let processFile = await pool.importFileProcessor(moduleId);
-    let generator = processFile(createFile({ path: "file.txt" }), context);
+    let moduleId = await createModule(factory);
+    let processFile = await pool.importFileProcessor(moduleId, 500);
+    let generator = processFile(createFile({ path: "file.txt" }), run);
     let { value } = await generator.next();
     let file = createFile(value);
 
@@ -189,57 +186,52 @@ describe("WorkerPool.importFileProcessor()", () => {
   });
 
   it("should re-throw an error from the factory function", async () => {
-    let module = await createModule(
+    let moduleId = await createModule(
       async function badFactory (data) {
         throw new RangeError(data);
-      },
-      "Boom!"
+      }
     );
 
     try {
-      await pool.importFileProcessor(module);
+      await pool.importFileProcessor(moduleId, "Boom!");
       assert.fail("An error should have been thrown");
     }
     catch (error) {
       expect(error).to.be.an.instanceOf(RangeError);
       expect(error.message).to.equal(
-        `Error importing module: ${module.moduleId} \n` +
+        `Error importing module: ${moduleId} \n` +
         "Boom!");
     }
   });
 
   it("should throw an error if the factory function doesn't export a function", async () => {
-    let module = await createModule(
-      function badFactory (data) { return data; },
-      "Hello, World"
+    let moduleId = await createModule(
+      function badFactory (data) { return data; }
     );
 
     try {
-      await pool.importFileProcessor(module);
+      await pool.importFileProcessor(moduleId, "Hello, World");
       assert.fail("An error should have been thrown");
     }
     catch (error) {
       expect(error).to.be.an.instanceOf(TypeError);
       expect(error.message).to.equal(
-        `Error importing module: ${module.moduleId} \n` +
+        `Error importing module: ${moduleId} \n` +
         'The badFactory function returned "Hello, World". Expected a CodeEngine file processor.');
     }
   });
 
   it("should throw an error if the factory function doesn't export anything", async () => {
-    let module = await createModule(
-      () => undefined,
-      "Hello, World"
-    );
+    let moduleId = await createModule(() => undefined);
 
     try {
-      await pool.importFileProcessor(module);
+      await pool.importFileProcessor(moduleId, "Hello, World");
       assert.fail("An error should have been thrown");
     }
     catch (error) {
       expect(error).to.be.an.instanceOf(TypeError);
       expect(error.message).to.equal(
-        `Error importing module: ${module.moduleId} \n` +
+        `Error importing module: ${moduleId} \n` +
         "The exported function must return a CodeEngine file processor.");
     }
   });

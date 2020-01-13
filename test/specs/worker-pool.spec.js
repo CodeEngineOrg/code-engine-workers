@@ -5,8 +5,8 @@ const { createFile } = require("@code-engine/utils");
 const { assert, expect } = require("chai");
 const WorkerPool = require("../utils/worker-pool");
 const createModule = require("../utils/create-module");
-const createContext = require("../utils/create-context");
-const createEventEmitter = require("../utils/create-event-emitter");
+const createRun = require("../utils/create-run");
+const createEngine = require("../utils/create-engine");
 const sinon = require("sinon");
 const os = require("os");
 
@@ -28,25 +28,24 @@ describe("WorkerPool class", () => {
     }
 
     expect(noArgs).to.throw(TypeError);
-    expect(noArgs).to.throw("Invalid EventEmitter: undefined. A value is required.");
+    expect(noArgs).to.throw("Invalid CodeEngine instance: undefined. A value is required.");
   });
 
   it("should throw an error if called with an invalid CWD", async () => {
     function badCWD () {
-      let emitter = createEventEmitter();
-      let context = createContext({ cwd: "\n" });
-      WorkerPool.create(emitter, context);
+      let engine = createEngine({ cwd: "\n" });
+      WorkerPool.create(engine);
     }
 
     expect(badCWD).to.throw(Error);
     expect(badCWD).to.throw('Invalid cwd: "\n". It cannot be all whitespace.');
   });
 
-  describe("emitter", () => {
+  describe("engine", () => {
     it("should emit an error event if a worker crashes", async () => {
-      let emitter = createEventEmitter();
-      let context = createContext();
-      let pool = WorkerPool.create(emitter, context);
+      let engine = createEngine();
+      let run = createRun(engine);
+      let pool = WorkerPool.create(engine);
 
       let moduleId = await createModule(() => {
         // Crash the worker thread after half a second
@@ -61,21 +60,20 @@ describe("WorkerPool class", () => {
       await new Promise((resolve) => setTimeout(resolve, 800));
 
       // An "error" event should have beeen emitted
-      sinon.assert.called(emitter.emit);
-      sinon.assert.calledWithExactly(emitter.emit,
+      sinon.assert.called(engine.emit);
+      sinon.assert.calledWithExactly(engine.emit,
         "error",
         sinon.match({
           name: "SyntaxError",
           message: "Boom!"
-        }),
-        context,
+        })
       );
     });
 
     it("should emit an error event if a worker exits unexpectedly", async () => {
-      let emitter = createEventEmitter();
-      let context = createContext();
-      let pool = WorkerPool.create(emitter, context);
+      let engine = createEngine();
+      let run = createRun(engine);
+      let pool = WorkerPool.create(engine);
 
       let moduleId = await createModule(async () => {
         // Wait a sec
@@ -88,7 +86,7 @@ describe("WorkerPool class", () => {
       let processFile = await pool.importFileProcessor(moduleId);
 
       try {
-        await processFile(createFile({ path: "file.txt" }), context).next();
+        await processFile(createFile({ path: "file.txt" }), run).next();
         assert.fail("An error should have been thrown");
       }
       catch (error) {
@@ -96,17 +94,17 @@ describe("WorkerPool class", () => {
         expect(error.message).to.match(/^CodeEngine worker \#-?\d unexpectedly exited with code 0\.$/);
 
         // The WorkerPool also emitted the original error
-        sinon.assert.calledOnce(emitter.emit);
-        sinon.assert.calledWithExactly(emitter.emit, "error", error, context);
+        sinon.assert.calledOnce(engine.emit);
+        sinon.assert.calledWithExactly(engine.emit, "error", error);
       }
     });
   });
 
   describe("log", () => {
     it("should log to the specified Logger", async () => {
-      let emitter = createEventEmitter();
-      let context = createContext();
-      let pool = WorkerPool.create(emitter, context);
+      let engine = createEngine();
+      let run = createRun(engine);
+      let pool = WorkerPool.create(engine);
 
       let moduleId = await createModule((file, { log }) => {
         log("This is a log message");
@@ -114,34 +112,31 @@ describe("WorkerPool class", () => {
       });
 
       let processFile = await pool.importFileProcessor(moduleId);
-      await processFile(createFile({ path: "file.txt" }), context).next();
+      await processFile(createFile({ path: "file.txt" }), run).next();
 
-      sinon.assert.callCount(context.log.info, 1);
-      sinon.assert.calledWithExactly(context.log.info, "This is a log message", undefined);
+      sinon.assert.callCount(run.log.info, 1);
+      sinon.assert.calledWithExactly(run.log.info, "This is a log message", undefined);
     });
   });
 
   describe("concurrency", () => {
     it("should create one worker", async () => {
-      let emitter = createEventEmitter();
-      let context = createContext({ concurrency: 1 });
-      let pool = WorkerPool.create(emitter, context);
+      let engine = createEngine({ concurrency: 1 });
+      let pool = WorkerPool.create(engine);
       expect(pool.size).to.equal(1);
     });
 
     it("should create more workers than CPUs", async () => {
       let size = os.cpus().length * 3;
-      let emitter = createEventEmitter();
-      let context = createContext({ concurrency: size });
-      let pool = WorkerPool.create(emitter, context);
+      let engine = createEngine({ concurrency: size });
+      let pool = WorkerPool.create(engine);
       expect(pool.size).to.equal(size);
     });
 
     it("should throw an error if concurrency is zero", async () => {
       function zero () {
-        let emitter = createEventEmitter();
-        let context = createContext({ concurrency: 0 });
-        return WorkerPool.create(emitter, context);
+        let engine = createEngine({ concurrency: 0 });
+        return WorkerPool.create(engine);
       }
 
       expect(zero).to.throw(RangeError);
@@ -150,9 +145,8 @@ describe("WorkerPool class", () => {
 
     it("should throw an error if concurrency is negative", async () => {
       function negative () {
-        let emitter = createEventEmitter();
-        let context = createContext({ concurrency: -1 });
-        return WorkerPool.create(emitter, context);
+        let engine = createEngine({ concurrency: -1 });
+        return WorkerPool.create(engine);
       }
 
       expect(negative).to.throw(RangeError);
@@ -161,9 +155,8 @@ describe("WorkerPool class", () => {
 
     it("should throw an error if concurrency is infinite", async () => {
       function infinite () {
-        let emitter = createEventEmitter();
-        let context = createContext({ concurrency: Infinity });
-        return WorkerPool.create(emitter, context);
+        let engine = createEngine({ concurrency: Infinity });
+        return WorkerPool.create(engine);
       }
 
       expect(infinite).to.throw(TypeError);
@@ -172,9 +165,8 @@ describe("WorkerPool class", () => {
 
     it("should throw an error if concurrency is not a whole number", async () => {
       function infinite () {
-        let emitter = createEventEmitter();
-        let context = createContext({ concurrency: 5.7 });
-        return WorkerPool.create(emitter, context);
+        let engine = createEngine({ concurrency: 5.7 });
+        return WorkerPool.create(engine);
       }
 
       expect(infinite).to.throw(TypeError);
@@ -183,9 +175,8 @@ describe("WorkerPool class", () => {
 
     it("should throw an error if concurrency is invalid", async () => {
       function infinite () {
-        let emitter = createEventEmitter();
-        let context = createContext({ concurrency: "a bunch" });
-        return WorkerPool.create(emitter, context);
+        let engine = createEngine({ concurrency: "a bunch" });
+        return WorkerPool.create(engine);
       }
 
       expect(infinite).to.throw(TypeError);
@@ -195,9 +186,8 @@ describe("WorkerPool class", () => {
 
   describe("dispose", () => {
     it("should ignore multiple dispose() calls", async () => {
-      let emitter = createEventEmitter();
-      let context = createContext();
-      let pool = WorkerPool.create(emitter, context);
+      let engine = createEngine();
+      let pool = WorkerPool.create(engine);
       expect(pool.isDisposed).to.equal(false);
 
       await pool.dispose();
@@ -208,9 +198,8 @@ describe("WorkerPool class", () => {
     });
 
     it("should throw an error if used after dispose()", async () => {
-      let emitter = createEventEmitter();
-      let context = createContext();
-      let pool = WorkerPool.create(emitter, context);
+      let engine = createEngine();
+      let pool = WorkerPool.create(engine);
       await pool.dispose();
 
       try {

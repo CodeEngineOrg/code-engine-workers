@@ -2,23 +2,23 @@
 
 const WorkerPool = require("../utils/worker-pool");
 const createModule = require("../utils/create-module");
-const createContext = require("../utils/create-context");
-const createEventEmitter = require("../utils/create-event-emitter");
+const createRun = require("../utils/create-run");
+const createEngine = require("../utils/create-engine");
 const { createFile } = require("@code-engine/utils");
 const { assert, expect } = require("chai");
 const sinon = require("sinon");
 
 describe("WorkerPool messaging between threads", () => {
-  let context, pool;
+  let run, pool;
 
-  beforeEach("create a new WorkerPool and Context", () => {
-    let emitter = createEventEmitter();
-    context = createContext();
-    pool = WorkerPool.create(emitter, context);
+  beforeEach("create a new WorkerPool and Run", () => {
+    let engine = createEngine();
+    run = createRun(engine);
+    pool = WorkerPool.create(engine);
   });
 
   it("should send log messages from worker threads to the main thread", async () => {
-    context.debug = true;
+    run.debug = true;
 
     let moduleId = await createModule((file, { log }) => {
       log("This is a log message", { foo: "bar" });
@@ -30,76 +30,75 @@ describe("WorkerPool messaging between threads", () => {
     });
 
     let processFile = await pool.importFileProcessor(moduleId);
-    await processFile(createFile({ path: "file.txt" }), context).next();
+    await processFile(createFile({ path: "file.txt" }), run).next();
 
-    sinon.assert.calledTwice(context.log.info);
-    expect(context.log.info.firstCall.args[0]).to.equal("This is a log message");
-    expect(context.log.info.firstCall.args[1]).to.deep.equal({ foo: "bar" });
+    sinon.assert.calledTwice(run.log.info);
+    expect(run.log.info.firstCall.args[0]).to.equal("This is a log message");
+    expect(run.log.info.firstCall.args[1]).to.deep.equal({ foo: "bar" });
 
-    expect(context.log.info.secondCall.args[0]).to.equal("This is an info message");
-    expect(context.log.info.secondCall.args[1]).to.deep.equal({ up: "down" });
+    expect(run.log.info.secondCall.args[0]).to.equal("This is an info message");
+    expect(run.log.info.secondCall.args[1]).to.deep.equal({ up: "down" });
 
-    sinon.assert.calledOnce(context.log.warn);
-    expect(context.log.warn.firstCall.args[0]).to.equal("This is a warning message");
-    expect(context.log.warn.firstCall.args[1]).to.deep.equal({ answer: 42 });
+    sinon.assert.calledOnce(run.log.warn);
+    expect(run.log.warn.firstCall.args[0]).to.equal("This is a warning message");
+    expect(run.log.warn.firstCall.args[1]).to.deep.equal({ answer: 42 });
 
-    sinon.assert.calledTwice(context.log.error);
-    expect(context.log.error.firstCall.args[0]).to.be.an.instanceOf(RangeError);
-    expect(context.log.error.firstCall.args[0]).to.have.property("message", "This is an error");
-    expect(context.log.error.firstCall.args[1]).to.deep.equal({ fizz: "buzz" });
+    sinon.assert.calledTwice(run.log.error);
+    expect(run.log.error.firstCall.args[0]).to.be.an.instanceOf(RangeError);
+    expect(run.log.error.firstCall.args[0]).to.have.property("message", "This is an error");
+    expect(run.log.error.firstCall.args[1]).to.deep.equal({ fizz: "buzz" });
 
-    expect(context.log.error.secondCall.args[0]).to.equal("This is an error message");
-    expect(context.log.error.secondCall.args[1]).to.deep.equal({ today: new Date("2005-05-05T05:05:05.005Z") });
+    expect(run.log.error.secondCall.args[0]).to.equal("This is an error message");
+    expect(run.log.error.secondCall.args[1]).to.deep.equal({ today: new Date("2005-05-05T05:05:05.005Z") });
 
     // Lots of debug messages get logged for various things, so we have to filter the calls
-    let debugLogs = context.log.debug.getCalls().filter((call) => call.args[1].biz === "baz");
+    let debugLogs = run.log.debug.getCalls().filter((call) => call.args[1].biz === "baz");
     expect(debugLogs).to.have.lengthOf(1);
     expect(debugLogs[0].args[0]).to.equal("This is a debug message");
     expect(debugLogs[0].args[1]).to.deep.equal({ biz: "baz" });
   });
 
-  it("should not send debug log messages from worker threads to the main thread if context.debug is false", async () => {
-    context.debug = false;
+  it("should not send debug log messages from worker threads to the main thread if run.debug is false", async () => {
+    run.debug = false;
 
     let moduleId = await createModule((file, { log }) => {
       log.debug("This is a debug message", { biz: "baz" });
     });
 
     let processFile = await pool.importFileProcessor(moduleId);
-    await processFile(createFile({ path: "file.txt" }), context).next();
+    await processFile(createFile({ path: "file.txt" }), run).next();
 
     // Lots of debug messages get logged for various things.
     // But for the purposes of this test, we only care that the log message above was NOT logged.
-    let debugLogs = context.log.debug.getCalls().filter((call) => call.args[1].biz === "baz");
+    let debugLogs = run.log.debug.getCalls().filter((call) => call.args[1].biz === "baz");
     expect(debugLogs).to.have.lengthOf(0);
   });
 
   it("should send errors from worker threads to the main thread while importing a module", async () => {
-    let module = await createModule(
+    let moduleId = await createModule(
       (data) => {
         let error = new URIError("Boom!");
         Object.assign(error, data);
         throw error;
-      },
-      {
-        foo: "bar",
-        answer: 42,
-        when: new Date("2005-05-05T05:05:05.005Z")
       }
     );
 
     try {
-      await pool.importFileProcessor(module);
+      await pool.importFileProcessor(moduleId, {
+        foo: "bar",
+        answer: 42,
+        when: new Date("2005-05-05T05:05:05.005Z")
+      });
       assert.fail("An error should have been thrown");
     }
     catch (error) {
       expect(error).to.be.an.instanceOf(URIError);
-      expect(error.message).to.equal(`Error importing module: ${module.moduleId} \nBoom!`);
+      expect(error.message).to.equal(`Error importing module: ${moduleId} \nBoom!`);
       expect(error.toJSON()).to.deep.equal({
         name: "URIError",
-        message: `Error importing module: ${module.moduleId} \nBoom!`,
+        message: `Error importing module: ${moduleId} \nBoom!`,
         stack: error.stack,
-        moduleId: module.moduleId,
+        moduleId,
         workerId: error.workerId,
         foo: "bar",
         answer: 42,
@@ -113,7 +112,7 @@ describe("WorkerPool messaging between threads", () => {
     let processFile = await pool.importFileProcessor(moduleId);
 
     try {
-      await processFile(createFile({ path: "file.txt" }), context).next();
+      await processFile(createFile({ path: "file.txt" }), run).next();
       assert.fail("An error should have been thrown");
     }
     catch (error) {
@@ -145,7 +144,7 @@ describe("WorkerPool messaging between threads", () => {
     let processFile = await pool.importFileProcessor(moduleId);
 
     try {
-      await processFile(createFile({ path: "file.txt" }), context).next();
+      await processFile(createFile({ path: "file.txt" }), run).next();
       assert.fail("An error should have been thrown");
     }
     catch (error) {
@@ -171,7 +170,7 @@ describe("WorkerPool messaging between threads", () => {
     let processFile = await pool.importFileProcessor(moduleId);
 
     try {
-      await processFile(createFile({ path: "file.txt" }), context).next();
+      await processFile(createFile({ path: "file.txt" }), run).next();
       assert.fail("An error should have been thrown");
     }
     catch (error) {
@@ -187,7 +186,7 @@ describe("WorkerPool messaging between threads", () => {
     let processFile = await pool.importFileProcessor(moduleId);
 
     try {
-      await processFile(createFile({ path: "file.txt" }), context).next();
+      await processFile(createFile({ path: "file.txt" }), run).next();
       assert.fail("An error should have been thrown");
     }
     catch (error) {

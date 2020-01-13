@@ -10,13 +10,12 @@ tmp.setGracefulCleanup();
 module.exports = createModule;
 
 /**
- * Creates a worker module that exports the given plugin method, optionally accepting the given data.
+ * Creates a worker module that exports the given plugin method
  *
  * @param code {function|string} - The function or code to export in the module
- * @param [data] {object} - The data (if any) to make available to the plugin method
- * @returns {string|object} - A CodeEngine worker module
+ * @returns {string} - The path to the worker module
  */
-async function createModule (code, data) {
+async function createModule (code) {
   // Create a temp file
   let moduleId = await new Promise((resolve, reject) =>
     tmp.dir({ prefix: "code-engine-" }, (e, p) => e ? reject(e) : resolve(p)));
@@ -27,10 +26,5 @@ async function createModule (code, data) {
 
   await fs.writeFile(join(moduleId, "index.js"), code);
 
-  if (data === undefined) {
-    return moduleId;
-  }
-  else {
-    return { moduleId, data };
-  }
+  return moduleId;
 }
