@@ -1,7 +1,7 @@
 import { EventName } from "@code-engine/types";
 import { ono } from "ono";
 import { Worker, WorkerOptions } from "worker_threads";
-import { createError } from "../clone/clone-error";
+import { createError } from "../clone/error";
 import { Message } from "../messaging/messages";
 import { FinishedReply, Reply } from "../messaging/replies";
 

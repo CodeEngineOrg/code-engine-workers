@@ -1,6 +1,6 @@
 import { CloneableObject, LogLevel } from "@code-engine/types";
-import { ErrorClone } from "../clone/clone-error";
-import { FileClone } from "../clone/clone-file";
+import { ErrorClone } from "../clone/error";
+import { FileClone } from "../clone/file";
 
 
 /**

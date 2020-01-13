@@ -1,6 +1,6 @@
 import { FileProcessor, ModuleDefinition } from "@code-engine/types";
-import { ContextClone } from "../clone/clone-context";
-import { FileClone } from "../clone/clone-file";
+import { FileClone } from "../clone/file";
+import type { RunClone } from "../clone/run";
 
 
 /**
@@ -80,7 +80,7 @@ export interface ProcessFileMessage {
   file: FileClone;
 
   /**
-   * Contextual information about the current build.
+   * Information about the current run.
    */
-  context: ContextClone;
+  run: RunClone;
 }

@@ -1,4 +1,4 @@
-import { BuildContext, CodeEngineEventEmitter, Context, EventName, File, FileProcessor, ModuleDefinition } from "@code-engine/types";
+import { CodeEngine, EventName, File, FileProcessor, ModuleDefinition, Run } from "@code-engine/types";
 import { validate } from "@code-engine/validate";
 import { ono } from "ono";
 import { ImportFileProcessorMessage, ImportModuleMessage } from "../messaging/messages";
@@ -23,18 +23,17 @@ export class WorkerPool {
   /** @internal */
   private _cwd: string;
 
-  public constructor(emitter: CodeEngineEventEmitter, context: Context) {
-    validate.value(emitter, "EventEmitter");
-    validate.type.function(emitter.emit, "EventEmitter");
-    validate.type.object(context, "CodeEngine context");
+  public constructor(engine: CodeEngine) {
+    validate.value(engine, "CodeEngine instance");
+    validate.type.function(engine.emit, "EventEmitter");
 
-    this._cwd = validate.string.nonWhitespace(context.cwd, "cwd");
-    let concurrency = validate.number.integer.positive(context.concurrency, "concurrency");
+    this._cwd = validate.string.nonWhitespace(engine.cwd, "cwd");
+    let concurrency = validate.number.integer.positive(engine.concurrency, "concurrency");
 
-    let emitError = (error: Error) => emitter.emit(EventName.Error, error, context);
+    let emitError = (error: Error) => engine.emit(EventName.Error, error);
 
     for (let i = 0; i < concurrency; i++) {
-      let worker = new Worker(context.log);
+      let worker = new Worker(engine.log);
       worker.on("error", emitError);
       this._workers.push(worker);
     }
@@ -75,12 +74,12 @@ export class WorkerPool {
 
     // Create a CodeEngine FileProcessor function that executes the module on a worker thread
     let plugin = {
-      [name]: (file: File, context: BuildContext) => {
+      [name]: (file: File, run: Run) => {
         // Select a worker from the pool to process the files
         let worker = this._select();
 
         // Process the file on the worker thread
-        return worker.processFile(moduleUID, file, context);
+        return worker.processFile(moduleUID, file, run);
       }
     };
 

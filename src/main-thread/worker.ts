@@ -1,10 +1,10 @@
-import { BuildContext, EventName, File, FileInfo, Logger } from "@code-engine/types";
+import { EventName, File, FileInfo, Logger, Run } from "@code-engine/types";
 import { log } from "@code-engine/utils";
 import { ono } from "ono";
 import * as path from "path";
-import { cloneContext } from "../clone/clone-context";
-import { createError } from "../clone/clone-error";
-import { cloneFile } from "../clone/clone-file";
+import { createError } from "../clone/error";
+import { cloneFile } from "../clone/file";
+import { cloneRun } from "../clone/run";
 import { ImportFileProcessorMessage, ImportModuleMessage } from "../messaging/messages";
 import { ImportFileProcessorReply } from "../messaging/replies";
 import { awaitOnline } from "./await-online";
@@ -55,15 +55,15 @@ export class Worker extends Messenger {
   /**
    * Processes the given files in the worker thread.
    */
-  public async* processFile(moduleUID: number, file: File, context: BuildContext): AsyncGenerator<FileInfo> {
+  public async* processFile(moduleUID: number, file: File, run: Run): AsyncGenerator<FileInfo> {
     await this._waitUntilOnline;
     this._debug(`CodeEngine worker #${this.threadId} is processing ${file}`, { path: file.path });
 
     let [fileClone, transferList] = cloneFile(file);
-    let contextClone = cloneContext(context);
+    let runClone = cloneRun(run);
 
     let replies = this.postMessageWithReplies(
-      { type: "processFile", moduleUID, file: fileClone, context: contextClone },
+      { type: "processFile", moduleUID, file: fileClone, run: runClone },
       transferList
     );
 
@@ -72,7 +72,7 @@ export class Worker extends Messenger {
       switch (reply.type) {
         case "log":
           let message = typeof reply.message === "string" ? reply.message : createError(reply.message);
-          log(context.log, reply.level, message, reply.data);
+          log(run.log, reply.level, message, reply.data);
           break;
 
         case "file":

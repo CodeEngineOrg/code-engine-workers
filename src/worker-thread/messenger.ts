@@ -1,5 +1,5 @@
 import { MessagePort } from "worker_threads";
-import { cloneError } from "../clone/clone-error";
+import { cloneError } from "../clone/error";
 import { ImportFileProcessorMessage, ImportModuleMessage, IncomingMessage, Message, ProcessFileMessage } from "../messaging/messages";
 import { Reply } from "../messaging/replies";
 

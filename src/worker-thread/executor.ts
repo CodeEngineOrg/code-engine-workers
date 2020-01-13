@@ -3,8 +3,8 @@ import { FactoryFunction, FileProcessor } from "@code-engine/types";
 import { createFile, importModule, iterate, normalizeFileInfo } from "@code-engine/utils";
 import { ono } from "ono";
 import { MessagePort } from "worker_threads";
-import { createContext } from "../clone/clone-context";
-import { cloneFile } from "../clone/clone-file";
+import { cloneFile } from "../clone/file";
+import { createRun } from "../clone/run";
 import { ImportFileProcessorMessage, ImportModuleMessage, IncomingMessage, ProcessFileMessage } from "../messaging/messages";
 import { Messenger } from "../worker-thread/messenger";
 
@@ -105,13 +105,13 @@ export class Executor extends Messenger {
    * Processes a file using the specified plugin.
    */
   public async processFile(message: IncomingMessage & ProcessFileMessage): Promise<void> {
-    // Create clones of the File and Context
+    // Create clones of the File and Run
     let file = createFile(message.file);
-    let context = createContext(this, message.id, message.context);
+    let run = createRun(this, message.id, message.run);
 
     // Process the file using the specified plugin
     let fileProcessor = this._processors.get(message.moduleUID)!;
-    let output = await fileProcessor.call(undefined, file, context);
+    let output = await fileProcessor.call(undefined, file, run);
 
     for await (let fileInfo of iterate(output)) {
       let outFile = normalizeFileInfo(fileInfo);
