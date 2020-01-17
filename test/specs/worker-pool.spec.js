@@ -44,7 +44,6 @@ describe("WorkerPool class", () => {
   describe("engine", () => {
     it("should emit an error event if a worker crashes", async () => {
       let engine = createEngine();
-      let run = createRun(engine);
       let pool = WorkerPool.create(engine);
 
       let moduleId = await createModule(() => {
