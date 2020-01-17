@@ -1,6 +1,6 @@
 import { FileProcessor, ModuleDefinition } from "@code-engine/types";
 import { FileClone } from "../clone/file";
-import type { RunClone } from "../clone/run";
+import { RunClone } from "../clone/run";
 
 
 /**
