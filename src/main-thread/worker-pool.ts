@@ -1,6 +1,6 @@
 import { Cloneable, CodeEngine, EventName, File, FileProcessor, Run } from "@code-engine/types";
 import { validate } from "@code-engine/validate";
-import { ono } from "ono";
+import { ono } from "@jsdevtools/ono";
 import { ImportFileProcessorMessage, ImportModuleMessage } from "../messaging/messages";
 import { Worker } from "./worker";
 

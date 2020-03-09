@@ -1,5 +1,5 @@
 import { Cloneable } from "@code-engine/types";
-import { ErrorLike, Ono, ono } from "ono";
+import { ErrorLike, Ono, ono } from "@jsdevtools/ono";
 
 /**
  * The data necessary to clone an `Error` object across the thread boundary.

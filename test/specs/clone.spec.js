@@ -8,7 +8,7 @@ const createEngine = require("../utils/create-engine");
 const { createFile } = require("@code-engine/utils");
 const { expect } = require("chai");
 const sinon = require("sinon");
-const ono = require("ono");
+const ono = require("@jsdevtools/ono");
 
 describe("Cloning data across the thread boundary", () => {
 

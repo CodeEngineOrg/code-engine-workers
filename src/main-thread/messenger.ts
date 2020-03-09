@@ -1,5 +1,5 @@
 import { EventName } from "@code-engine/types";
-import { ono } from "ono";
+import { ono } from "@jsdevtools/ono";
 import { Worker, WorkerOptions } from "worker_threads";
 import { createError } from "../clone/error";
 import { Message } from "../messaging/messages";

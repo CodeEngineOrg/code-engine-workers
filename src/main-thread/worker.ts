@@ -1,6 +1,6 @@
 import { EventName, File, FileInfo, Logger, Run } from "@code-engine/types";
 import { log } from "@code-engine/utils";
-import { ono } from "ono";
+import { ono } from "@jsdevtools/ono";
 import * as path from "path";
 import { createError } from "../clone/error";
 import { cloneFile } from "../clone/file";

@@ -1,7 +1,7 @@
 import { stringify } from "@code-engine/stringify";
 import { FactoryFunction, FileProcessor } from "@code-engine/types";
 import { createFile, importModule, iterate, normalizeFileInfo } from "@code-engine/utils";
-import { ono } from "ono";
+import { ono } from "@jsdevtools/ono";
 import { MessagePort } from "worker_threads";
 import { cloneFile } from "../clone/file";
 import { createRun } from "../clone/run";
