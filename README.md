@@ -1,8 +1,8 @@
 CodeEngine workers
 ======================================
 
-[![Cross-Platform Compatibility](https://engine.codes/img/badges/os-badges.svg)](https://travis-ci.com/CodeEngineOrg/code-engine-workers)
-[![Build Status](https://api.travis-ci.com/CodeEngineOrg/code-engine-workers.svg?branch=master)](https://travis-ci.com/CodeEngineOrg/code-engine-workers)
+[![Cross-Platform Compatibility](https://engine.codes/img/badges/os-badges.svg)](https://github.com/CodeEngineOrg/code-engine-workers/blob/master/.github/workflows/CI-CD.yaml)
+[![Build Status](https://github.com/CodeEngineOrg/code-engine-workers/workflows/CI-CD/badge.svg)](https://github.com/CodeEngineOrg/code-engine-workers/blob/master/.github/workflows/CI-CD.yaml)
 
 [![Coverage Status](https://coveralls.io/repos/github/CodeEngineOrg/code-engine-workers/badge.svg?branch=master)](https://coveralls.io/github/CodeEngineOrg/code-engine-workers)
 [![Dependencies](https://david-dm.org/CodeEngineOrg/code-engine-workers.svg)](https://david-dm.org/CodeEngineOrg/code-engine-workers)
