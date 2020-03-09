@@ -1,6 +1,6 @@
 {
   "name": "@code-engine/workers",
-  "version": "0.0.13",
+  "version": "1.0.0",
   "description": "CodeEngine's multi-threaded processing functionality",
   "keywords": [
     "code-engine",
@@ -64,7 +64,7 @@
   },
   "dependencies": {
     "@code-engine/stringify": "^1.0.0",
-    "@code-engine/utils": "0.0.21",
+    "@code-engine/utils": "^1.0.0",
     "@code-engine/validate": "^1.0.0",
     "@jsdevtools/ono": "^7.1.0",
     "resolve-from": "^5.0.0",
