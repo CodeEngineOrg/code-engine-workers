@@ -1,4 +1,4 @@
-import { stringify } from "@code-engine/stringify";
+import { humanize } from "@jsdevtools/humanize-anything";
 import { FactoryFunction, FileProcessor } from "@code-engine/types";
 import { createFile, importModule, iterate, normalizeFileInfo } from "@code-engine/utils";
 import { ono } from "@jsdevtools/ono";
@@ -38,7 +38,7 @@ export class Executor extends Messenger {
       }
       else if (typeof defaultExport !== "function") {
         throw ono.type(
-          `The module exported ${stringify(defaultExport, { article: true })}. ` +
+          `The module exported ${humanize(defaultExport, { article: true })}. ` +
           `CodeEngine plugin modules must export a function.`);
       }
 
@@ -57,7 +57,7 @@ export class Executor extends Messenger {
         }
         else if (typeof product !== "function") {
           throw ono.type(
-            `The ${factory.name || "exported"} function returned ${stringify(product, { article: true })}. ` +
+            `The ${factory.name || "exported"} function returned ${humanize(product, { article: true })}. ` +
             "Expected a CodeEngine file processor.");
         }
 

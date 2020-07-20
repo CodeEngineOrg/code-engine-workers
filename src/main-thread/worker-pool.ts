@@ -1,5 +1,5 @@
 import { Cloneable, CodeEngine, EventName, File, FileProcessor, Run } from "@code-engine/types";
-import { validate } from "@code-engine/validate";
+import { assert } from "@jsdevtools/assert";
 import { ono } from "@jsdevtools/ono";
 import { ImportFileProcessorMessage, ImportModuleMessage } from "../messaging/messages";
 import { Worker } from "./worker";
@@ -24,11 +24,11 @@ export class WorkerPool {
   private _cwd: string;
 
   public constructor(engine: CodeEngine) {
-    validate.value(engine, "CodeEngine instance");
-    validate.type.function(engine.emit, "EventEmitter");
+    assert.value(engine, "CodeEngine instance");
+    assert.type.function(engine.emit, "EventEmitter");
 
-    this._cwd = validate.string.nonWhitespace(engine.cwd, "cwd");
-    let concurrency = validate.number.integer.positive(engine.concurrency, "concurrency");
+    this._cwd = assert.string.nonWhitespace(engine.cwd, "cwd");
+    let concurrency = assert.number.integer.positive(engine.concurrency, "concurrency");
 
     let emitError = (error: Error) => engine.emit(EventName.Error, error);
 
