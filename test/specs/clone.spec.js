@@ -110,7 +110,7 @@ describe("Cloning data across the thread boundary", () => {
     });
 
     // Make sure these didn't get converted to primitives
-    expect(cloned.bool).to.be.an.instanceOf(Boolean).and.not.false;
+    expect(cloned.bool).to.be.an.instanceOf(Boolean).and.not.equal(false);
     expect(cloned.string).to.be.an.instanceOf(String).and.not.equal("");
 
     // Make sure the array has a length of 5, even though no values were ever set

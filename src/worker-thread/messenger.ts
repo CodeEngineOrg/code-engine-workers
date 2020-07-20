@@ -13,7 +13,7 @@ export abstract class Messenger {
 
   public constructor(port: MessagePort) {
     this._port = port;
-    port.on("message", this._handleMessage.bind(this));
+    port.on("message", this._handleMessage.bind(this));   // eslint-disable-line @typescript-eslint/no-misused-promises
   }
 
   /**
@@ -43,7 +43,6 @@ export abstract class Messenger {
    */
   private async _handleMessage(message: IncomingMessage & Message) {
     try {
-      // tslint:disable-next-line: switch-default
       switch (message.type) {
         case "importFileProcessor":
           await this.importFileProcessor(message);
@@ -60,7 +59,7 @@ export abstract class Messenger {
     }
     catch (error) {
       // Something went wrong while handling the message, so reply with an error.
-      this.postReply({ to: message.id, type: "error", error: cloneError(error)});
+      this.postReply({ to: message.id, type: "error", error: cloneError(error) });
     }
   }
 }

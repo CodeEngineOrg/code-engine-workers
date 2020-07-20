@@ -1,6 +1,6 @@
-import { humanize } from "@jsdevtools/humanize-anything";
 import { FactoryFunction, FileProcessor } from "@code-engine/types";
 import { createFile, importModule, iterate, normalizeFileInfo } from "@code-engine/utils";
+import { humanize } from "@jsdevtools/humanize-anything";
 import { ono } from "@jsdevtools/ono";
 import { MessagePort } from "worker_threads";
 import { cloneFile } from "../clone/file";
@@ -34,12 +34,12 @@ export class Executor extends Messenger {
       let defaultExport = exports.default;
 
       if (defaultExport === undefined || defaultExport === null) {
-        throw ono.type(`CodeEngine plugin modules must export a function.`);
+        throw ono.type("CodeEngine plugin modules must export a function.");
       }
       else if (typeof defaultExport !== "function") {
         throw ono.type(
           `The module exported ${humanize(defaultExport, { article: true })}. ` +
-          `CodeEngine plugin modules must export a function.`);
+          "CodeEngine plugin modules must export a function.");
       }
 
       // This could be a FileProcessor or a FactoryFunction
@@ -111,7 +111,7 @@ export class Executor extends Messenger {
 
     // Process the file using the specified plugin
     let fileProcessor = this._processors.get(message.moduleUID)!;
-    let output = await fileProcessor.call(undefined, file, run);
+    let output = await fileProcessor.call(undefined, file, run);  // eslint-disable-line no-useless-call
 
     for await (let fileInfo of iterate(output)) {
       let outFile = normalizeFileInfo(fileInfo);

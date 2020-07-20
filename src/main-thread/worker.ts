@@ -68,7 +68,6 @@ export class Worker extends Messenger {
     );
 
     for await (let reply of replies) {
-      // tslint:disable-next-line: switch-default
       switch (reply.type) {
         case "log":
           let message = typeof reply.message === "string" ? reply.message : createError(reply.message);

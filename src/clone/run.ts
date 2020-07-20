@@ -25,7 +25,6 @@ export interface RunClone {
  * @internal
  */
 export function cloneRun(run: Run): RunClone {
-  // tslint:disable-next-line: no-object-literal-type-assertion
   let clone = { ...run, log: undefined } as unknown as RunClone;
   clone.changedFiles = run.changedFiles.map(cloneChangedFile);
   return clone;

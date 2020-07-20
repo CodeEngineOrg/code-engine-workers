@@ -43,8 +43,7 @@ export class Messenger extends Worker {
    * Sends a message to the `Executor` and yields all replies. If an error occurs while processing
    * the message then the generator will reject.
    */
-  public async* postMessageWithReplies(message: Message, transferList?: ArrayBuffer[])
-  : AsyncGenerator<Reply, FinishedReply> {
+  public async* postMessageWithReplies(message: Message, transferList?: ArrayBuffer[]): AsyncGenerator<Reply, FinishedReply> {
     // Send the message and await the first reply
     let reply = await this.postMessageAsync(message, transferList);
 

@@ -93,7 +93,7 @@ export class WorkerPool {
   public async importModule(moduleId: string, data?: Cloneable): Promise<void> {
     this._assertNotDisposed();
     let cwd = this._cwd;
-    let message: ImportModuleMessage = { type: "importModule", cwd,  moduleId, data };
+    let message: ImportModuleMessage = { type: "importModule", cwd, moduleId, data };
 
     // Import the JavaScript module in all worker threads
     await Promise.all(
@@ -129,7 +129,7 @@ export class WorkerPool {
    */
   private _assertNotDisposed() {
     if (this.isDisposed) {
-      throw ono(`CodeEngine cannot be used after it has been disposed.`);
+      throw ono("CodeEngine cannot be used after it has been disposed.");
     }
   }
 }

@@ -6,7 +6,6 @@ import { Worker } from "./worker";
  * or rejects if the worker errors or exits first.
  * @internal
  */
-// tslint:disable-next-line: promise-function-async
 export function awaitOnline(worker: Worker): Promise<void> {
   let promise = new Promise<void>((resolve, reject) => {
     // Reject if the worker errors before coming online

@@ -216,7 +216,7 @@ describe("Executor.processFile()", () => {
     mainThreadFile.contents.write("Hello, world");
 
     // The worker thread modifies the file contents in-place
-    let moduleId = await createModule(function (workerThreadFile) {
+    let moduleId = await createModule((workerThreadFile) => {
       workerThreadFile.contents.write("ABC", 5);
       return workerThreadFile;
     });
@@ -252,7 +252,7 @@ describe("Executor.processFile()", () => {
     mainThreadFile.contents.write("Hello, world", 20);
 
     // The worker thread modifies the file contents in-place
-    let moduleId = await createModule(function (workerThreadFile) {
+    let moduleId = await createModule((workerThreadFile) => {
       workerThreadFile.contents.write("ABC", 5);
       return workerThreadFile;
     });

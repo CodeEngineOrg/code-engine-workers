@@ -1,4 +1,5 @@
 import { parentPort, threadId } from "worker_threads";
 import { Executor } from "./executor";
 
-let executor = new Executor(threadId, parentPort!);
+// eslint-disable-next-line no-new
+new Executor(threadId, parentPort!);
